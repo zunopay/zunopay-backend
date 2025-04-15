@@ -1,5 +1,9 @@
 import { User } from '@prisma/client';
 
+export class Authorization {
+  accessToken: string;
+}
+
 export type BaseJwtPayload = {
   /** Issued at */
   iat: number;

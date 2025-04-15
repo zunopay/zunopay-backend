@@ -1,10 +1,19 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
-import { validateEmail } from 'src/utils/user';
-import { GoogleUserPayload } from 'src/auth/dto/authorization.dto';
-import { AuthService } from 'src/auth/auth.service';
+import { validateEmail } from '../utils/user';
+import { GoogleUserPayload } from '../auth/dto/authorization.dto';
+import { AuthService } from '../auth/auth.service';
+import { hashPassword } from '../utils/hash';
+import { LoginDto } from './dto/login.dto';
+import { isEmail } from 'class-validator';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -22,13 +31,58 @@ export class UsersService {
 
     validateEmail(email);
 
-    /* TODO: Hash password, not required yet start with google login */
+    const hashedPassword = await hashPassword(password);
+    const emailVerifiedAt = !password ? new Date() : undefined;
 
     const user = await this.prisma.user.create({
-      data: { email, username, password, region, role: 'Indiviual' },
+      data: {
+        email: email.toLowerCase(),
+        username: username.toLowerCase(),
+        password: hashedPassword,
+        region,
+        role: 'Indiviual',
+        emailVerifiedAt,
+      },
     });
 
     return user;
+  }
+
+  async login(body: LoginDto) {
+    const { usernameOrEmail, password } = body;
+    const lowerCaseValue = usernameOrEmail.toLowerCase();
+
+    let user: User;
+    if (isEmail(usernameOrEmail)) {
+      user = await this.prisma.user.findUnique({
+        where: { email: lowerCaseValue },
+      });
+    } else {
+      user = await this.prisma.user.findUnique({
+        where: { username: lowerCaseValue },
+      });
+    }
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${usernameOrEmail} not found`);
+    }
+
+    if (!user.password.length) {
+      throw new BadRequestException(
+        'This user is linked to a Google Account. Please use google sign in.',
+      );
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
+      throw new UnauthorizedException("Password doesn't match");
+    }
+
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
   }
 
   async handleLoginWithGoogle(googleUser: GoogleUserPayload) {

@@ -1,6 +1,12 @@
 import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { SupportedRegion } from '@prisma/client';
-import { IsEmail, IsEnum, IsOptional, IsStrongPassword } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsStrongPassword,
+} from 'class-validator';
 import { IsValidUsername } from 'src/decorators/isValidUsername';
 
 export class RegisterDto {
@@ -11,6 +17,7 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
+  @IsString()
   @IsStrongPassword()
   password: string;
 

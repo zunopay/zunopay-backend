@@ -1,4 +1,4 @@
-import { Currency } from "../../types/payment";
+import { Currency } from '../../types/payment';
 
 export enum QrProvider {
   UPI,
