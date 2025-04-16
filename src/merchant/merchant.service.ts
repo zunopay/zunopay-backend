@@ -30,7 +30,7 @@ export class MerchantService {
   constructor(private readonly prisma: PrismaService) {}
 
   async register(userId: number, body: RegisterMerchantDto) {
-    const { vpa, businessDisplayName } = body;
+    const { vpa, displayName } = body;
     const commitment = generateCommitment(vpa);
 
     // check if verified vpa already exists
@@ -46,7 +46,7 @@ export class MerchantService {
 
     const merchant = await this.prisma.merchant.create({
       data: {
-        displayName: businessDisplayName,
+        displayName: displayName,
         user: { connect: { id: userId } },
         registry: {
           // User empty walletaddress until verified

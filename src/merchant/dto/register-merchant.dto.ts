@@ -2,7 +2,7 @@ import { IsString } from 'class-validator';
 
 export class RegisterMerchantDto {
   @IsString()
-  businessDisplayName: string;
+  displayName: string;
 
   @IsString()
   vpa: string;
