@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { SecurityConfig } from './config/config.interface';
 import { MerchantModule } from './merchant/merchant.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { MerchantModule } from './merchant/merchant.module';
       isGlobal: true,
       load: [config],
     }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       //eslint-disable-next-line @typescript-eslint/require-await
       useFactory: async (configService: ConfigService) => {

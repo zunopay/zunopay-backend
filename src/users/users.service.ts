@@ -22,6 +22,10 @@ export class UsersService {
     private readonly authService: AuthService,
   ) {}
 
+  async findOneById(id: number) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
   async findOne(username: string): Promise<User> {
     return this.prisma.user.findUnique({ where: { username } });
   }

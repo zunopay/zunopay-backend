@@ -7,7 +7,7 @@ import {
   IsString,
   IsStrongPassword,
 } from 'class-validator';
-import { IsValidUsername } from 'src/decorators/isValidUsername';
+import { IsValidUsername } from '../../decorators/isValidUsername';
 
 export class RegisterDto {
   @IsOptional()

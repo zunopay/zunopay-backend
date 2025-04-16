@@ -5,9 +5,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SecurityConfig } from '../config/config.interface';
 import { UsersService } from '../users/users.service';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       //eslint-disable-next-line @typescript-eslint/require-await
       useFactory: async (configService: ConfigService) => {
@@ -21,6 +24,6 @@ import { UsersService } from '../users/users.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersService],
+  providers: [AuthService, UsersService, JwtStrategy],
 })
 export class AuthModule {}
