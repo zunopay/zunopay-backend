@@ -1,8 +1,8 @@
 import { IsString } from 'class-validator';
 
-export class RegisterMerchantDto {
+export class VerifyMerchantDto {
   @IsString()
-  businessDisplayName: string;
+  username: string;
 
   @IsString()
   vpa: string;

@@ -9,6 +9,11 @@ import {
 } from 'class-validator';
 import { IsValidUsername } from '../../decorators/isValidUsername';
 
+enum AllowedRole {
+  Merchant = 'Merchant',
+  Indiviual = 'Indiviual',
+}
+
 export class RegisterDto {
   @IsOptional()
   @IsValidUsername()
@@ -24,6 +29,10 @@ export class RegisterDto {
   @ApiProperty({ enum: SupportedRegion })
   @IsEnum(SupportedRegion)
   region: SupportedRegion;
+
+  @ApiProperty({ enum: AllowedRole })
+  @IsEnum(AllowedRole)
+  role: AllowedRole;
 }
 
 export class GoogleRegisterDto extends OmitType(RegisterDto, [

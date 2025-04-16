@@ -1,11 +1,12 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { RegisterMerchantDto } from './dto/register-merchant.dto';
+import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { MerchantService } from './merchant.service';
 import { UserEntity } from '../decorators/user.decorator';
 import { UserPayload } from '../auth/dto/authorization.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from '../guards/roles.guard';
 import { Role } from '@prisma/client';
+import { toMerchantDto } from './dto/merchant.dto';
+import { VerifyMerchantDto } from './dto/verify-merchant.dto';
 
 @ApiTags('Merchant')
 @Controller('merchant')
@@ -13,13 +14,18 @@ export class MerchantController {
   constructor(private readonly merchantService: MerchantService) {}
 
   @RolesGuard([Role.KycVerifier])
-  @Post('/register')
-  async register(
+  @Patch('/verify')
+  async verify(
     @UserEntity() user: UserPayload,
-    @Body() body: RegisterMerchantDto,
+    @Body() body: VerifyMerchantDto,
   ) {
-    const merchant = await this.merchantService.register(user, body);
-    // TODO: Return merchant dto
-    return merchant;
+    await this.merchantService.verify(user, body);
+  }
+
+  @RolesGuard([Role.Merchant])
+  @Get('get/profile')
+  async fetchMe(@UserEntity() user: UserPayload) {
+    const me = await this.merchantService.findOneById(user.id);
+    return toMerchantDto(me);
   }
 }

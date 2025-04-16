@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
@@ -30,8 +30,27 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
+  async registerVerifier(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: { verifier: true },
+    });
+
+    if (user.verifier) {
+      throw new BadRequestException(' User is already a verifier ');
+    }
+
+    await this.prisma.user.update({
+      where: { username },
+      data: {
+        role: Role.KycVerifier,
+        verifier: { create: { createdAt: new Date() } },
+      },
+    });
+  }
+
   async register(body: RegisterDto): Promise<User> {
-    const { email, password, username, region } = body;
+    const { email, password, username, region, role } = body;
 
     validateEmail(email);
 
@@ -44,7 +63,7 @@ export class UsersService {
         username: username.toLowerCase(),
         password: hashedPassword,
         region,
-        role: 'Indiviual',
+        role,
         emailVerifiedAt,
       },
     });
