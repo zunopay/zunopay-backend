@@ -3,7 +3,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { GetReceiverParams } from './dto/get-receiver-params.dto';
 import { PaymentService } from './payment.service';
 import { toReceiverDto } from './dto/receiver.dto';
-import { PayParams } from './dto/pay-params.dto';
 import { TransferParams } from './dto/transfer-params.dto';
 import { UserEntity } from 'src/decorators/user.decorator';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
@@ -30,6 +29,4 @@ export class PaymentController {
     );
     return transferTransaction;
   }
-
-  pay(@Query() query: PayParams) {}
 }

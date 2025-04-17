@@ -8,6 +8,7 @@ import { UsersService } from '../users/users.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { MerchantService } from '../merchant/merchant.service';
+import { PrivyService } from '../third-party/privy/privy.service';
 
 @Module({
   imports: [
@@ -25,6 +26,12 @@ import { MerchantService } from '../merchant/merchant.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersService, JwtStrategy, MerchantService],
+  providers: [
+    AuthService,
+    UsersService,
+    JwtStrategy,
+    MerchantService,
+    PrivyService,
+  ],
 })
 export class AuthModule {}

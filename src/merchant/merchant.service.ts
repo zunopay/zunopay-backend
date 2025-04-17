@@ -9,6 +9,7 @@ import { RegisterMerchantDto } from './dto/register-merchant.dto';
 import { UserPayload } from '../auth/dto/authorization.dto';
 import { generateCommitment } from '../utils/hash';
 import { VerifyMerchantDto } from './dto/verify-merchant.dto';
+import { PrivyService } from '../third-party/privy/privy.service';
 
 @Injectable()
 export class MerchantService {
@@ -27,7 +28,10 @@ export class MerchantService {
    * 5. Create Offramp provider bank account
    * */
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly privyService: PrivyService,
+  ) {}
 
   async register(userId: number, body: RegisterMerchantDto) {
     const { vpa, displayName } = body;
@@ -74,6 +78,10 @@ export class MerchantService {
       throw new NotFoundException(' User does not have a merchant profile ');
     }
 
+    if (!user.emailVerifiedAt) {
+      throw new BadRequestException(' User email is not verified ');
+    }
+
     const verifierData = await this.prisma.kycVerifier.findUnique({
       where: { userId: kycVerifier.id },
     });
@@ -88,7 +96,7 @@ export class MerchantService {
       throw new BadRequestException("Virtual private address doesn't match");
     }
 
-    // TODO: Generate wallet address
+    const walletUser = await this.privyService.generateWallet(user.id);
     await this.prisma.merchant.update({
       where: { id: user.merchant.id },
       data: {
@@ -98,8 +106,7 @@ export class MerchantService {
           },
         },
         registry: {
-          // TODO: put the generated wallet
-          update: { walletAddress: '' },
+          update: { walletAddress: walletUser.wallet.address },
         },
       },
     });

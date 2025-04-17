@@ -11,6 +11,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { SecurityConfig } from './config/config.interface';
 import { MerchantModule } from './merchant/merchant.module';
 import { PassportModule } from '@nestjs/passport';
+import { PrivyModule } from './third-party/privy/privy.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { PassportModule } from '@nestjs/passport';
     AuthModule,
     PaymentModule,
     MerchantModule,
+    PrivyModule,
   ],
   controllers: [AppController],
   providers: [AppService],
