@@ -10,6 +10,7 @@ import { UserPayload } from '../auth/dto/authorization.dto';
 import { generateCommitment } from '../utils/hash';
 import { VerifyMerchantDto } from './dto/verify-merchant.dto';
 import { PrivyService } from '../third-party/privy/privy.service';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class MerchantService {
@@ -31,6 +32,7 @@ export class MerchantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly privyService: PrivyService,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async register(userId: number, body: RegisterMerchantDto) {
@@ -110,6 +112,24 @@ export class MerchantService {
         },
       },
     });
+  }
+
+  async getBalance(userId: number) {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { userId },
+      include: { registry: true },
+    });
+
+    if (!merchant.registry) {
+      throw new BadRequestException(
+        " Merchant doesn't have any wallet registered ",
+      );
+    }
+
+    const balance = await this.paymentService.getWalletBalance(
+      merchant.registry.walletAddress,
+    );
+    return balance;
   }
 
   async findOneById(userId: number) {

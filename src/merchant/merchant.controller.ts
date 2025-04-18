@@ -28,4 +28,10 @@ export class MerchantController {
     const me = await this.merchantService.findOneById(user.id);
     return toMerchantDto(me);
   }
+
+  @RolesGuard([Role.Merchant])
+  @Get('get/balance')
+  async getBalance(@UserEntity() user: UserPayload): Promise<string> {
+    return await this.merchantService.getBalance(user.id);
+  }
 }

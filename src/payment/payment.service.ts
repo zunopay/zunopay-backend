@@ -1,17 +1,46 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ReceiverBankingDetail, ReceiverQrDetails } from './dto/types';
 import { isNull } from 'lodash';
 import {
   constructDigitalTransferTransaction,
   getCurrencyValue,
+  getUSDCAccount,
+  getUSDCUiAmount,
 } from '../utils/payments';
 import { TransferParams } from './dto/transfer-params.dto';
-import { Connection } from '@solana/web3.js';
-import { getConnection } from '../utils/connection';
+import {
+  Connection,
+  PublicKey,
+  TransactionMessage,
+  VersionedTransaction,
+} from '@solana/web3.js';
+import {
+  getConnection,
+  getIdentitySignature,
+  getTreasuryPublicKey,
+} from '../utils/connection';
 import { PrismaService } from 'nestjs-prisma';
 import { SphereService } from '../third-party/sphere/sphere.service';
 import { generateCommitment, generateProtectedVpa } from '../utils/hash';
-import { UPI_VPA_PREFIX } from 'src/constants';
+import {
+  MIN_COMPUTE_PRICE_IX,
+  UPI_VPA_PREFIX,
+  USDC_ADDRESS,
+} from 'src/constants';
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  TOKEN_PROGRAM_ID,
+  TokenAccountNotFoundError,
+  TokenInvalidAccountOwnerError,
+  TokenInvalidMintError,
+  TokenInvalidOwnerError,
+} from '@solana/spl-token';
 
 /*
   TODO: 
@@ -63,6 +92,85 @@ export class PaymentService {
     );
 
     return transaction;
+  }
+
+  async getWalletBalance(walletAddress: string) {
+    const owner = new PublicKey(walletAddress);
+    const mint = new PublicKey(USDC_ADDRESS);
+    try {
+      const tokenAddress = await getUSDCAccount(owner);
+      const balance = await this.safeGetWalletBalance(
+        tokenAddress,
+        owner,
+        mint,
+      );
+      return balance;
+    } catch (_) {
+      throw new InternalServerErrorException(' Failed to get wallet balance ');
+    }
+  }
+
+  private async safeGetWalletBalance(
+    tokenAddress: PublicKey,
+    owner: PublicKey,
+    mint: PublicKey,
+  ) {
+    try {
+      const tokenAccount = await getAccount(this.connection, tokenAddress);
+      const amount = getUSDCUiAmount(Number(tokenAccount.amount));
+
+      return amount;
+    } catch (error: unknown) {
+      if (
+        error instanceof TokenAccountNotFoundError ||
+        error instanceof TokenInvalidAccountOwnerError
+      ) {
+        try {
+          const payer = getTreasuryPublicKey();
+
+          const instruction = createAssociatedTokenAccountInstruction(
+            payer,
+            tokenAddress,
+            owner,
+            mint,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID,
+          );
+
+          const latestBlockhash =
+            await this.connection.getLatestBlockhash('confirmed');
+          const transactionMessage = new TransactionMessage({
+            payerKey: payer,
+            recentBlockhash: latestBlockhash.blockhash,
+            instructions: [MIN_COMPUTE_PRICE_IX, instruction],
+          }).compileToV0Message([]);
+
+          const transaction = new VersionedTransaction(transactionMessage);
+          const signedTransaction = getIdentitySignature(transaction);
+
+          const rawTransaction = Buffer.from(signedTransaction.serialize());
+          console.log(rawTransaction.toString('base64'));
+
+          const signature = await this.connection.sendTransaction(
+            signedTransaction,
+            { skipPreflight: true },
+          );
+          await this.connection.confirmTransaction({
+            ...latestBlockhash,
+            signature,
+          });
+        } catch (error: unknown) {}
+
+        const account = await getAccount(this.connection, tokenAddress);
+        if (!account.mint.equals(mint)) throw new TokenInvalidMintError();
+        if (!account.owner.equals(owner)) throw new TokenInvalidOwnerError();
+
+        const amount = getUSDCUiAmount(Number(account.amount));
+        return amount;
+      } else {
+        throw error;
+      }
+    }
   }
 
   /*

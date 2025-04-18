@@ -66,3 +66,15 @@ export async function constructDigitalTransferTransaction(
 
   return serializedTransaction;
 }
+
+export async function getUSDCAccount(owner: PublicKey) {
+  const mint = new PublicKey(USDC_ADDRESS);
+
+  const tokenAccount = await getAssociatedTokenAddress(mint, owner);
+  return tokenAccount;
+}
+
+export function getUSDCUiAmount(amount: number) {
+  const uiAmount = (amount / USDC_DECIMALS).toFixed(3);
+  return uiAmount;
+}

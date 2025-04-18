@@ -14,13 +14,33 @@ import { hashPassword } from '../utils/hash';
 import { LoginDto } from './dto/login.dto';
 import { isEmail } from 'class-validator';
 import * as bcrypt from 'bcrypt';
+import { PaymentService } from 'src/payment/payment.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly paymentService: PaymentService,
   ) {}
+
+  async getBalance(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { registry: true },
+    });
+
+    if (!user.registry) {
+      throw new BadRequestException(
+        " User doesn't have any wallet registered ",
+      );
+    }
+
+    const balance = await this.paymentService.getWalletBalance(
+      user.registry.walletAddress,
+    );
+    return balance;
+  }
 
   async findOneById(id: number) {
     return this.prisma.user.findUnique({ where: { id } });

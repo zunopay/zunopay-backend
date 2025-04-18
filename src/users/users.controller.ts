@@ -25,4 +25,10 @@ export class UserController {
   async registerVerifier(@Param('username') username: string) {
     await this.userService.registerVerifier(username);
   }
+
+  @UserAuth()
+  @Get('get/balance')
+  async getBalance(@UserEntity() user: UserPayload): Promise<string> {
+    return await this.userService.getBalance(user.id);
+  }
 }
