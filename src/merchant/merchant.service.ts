@@ -115,7 +115,7 @@ export class MerchantService {
   async findOneById(userId: number) {
     const merchant = await this.prisma.merchant.findUnique({
       where: { userId },
-      include: { verification: true, user: true },
+      include: { verification: true },
     });
 
     return merchant;

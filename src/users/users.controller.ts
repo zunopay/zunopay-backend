@@ -16,7 +16,7 @@ export class UserController {
   @UserAuth()
   @Get('get/me')
   async fetchMe(@UserEntity() user: UserPayload) {
-    const me = await this.userService.findOneById(user.id);
+    const me = await this.userService.fetchMe(user.id);
     return toUserDto(me);
   }
 

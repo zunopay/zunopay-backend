@@ -26,6 +26,15 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  async fetchMe(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { merchant: { include: { verification: true } } },
+    });
+
+    return user;
+  }
+
   async findOne(username: string): Promise<User> {
     return this.prisma.user.findUnique({ where: { username } });
   }
