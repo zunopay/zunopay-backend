@@ -11,7 +11,10 @@ import {
   getUSDCAccount,
   getUSDCUiAmount,
 } from '../utils/payments';
-import { TransferParams } from './dto/transfer-params.dto';
+import {
+  TransferParams,
+  TransferWithVpaParams,
+} from './dto/transfer-params.dto';
 import {
   Connection,
   PublicKey,
@@ -75,6 +78,25 @@ export class PaymentService {
     };
   }
 
+  async transferDigitalWithVpa(query: TransferWithVpaParams, userId: number) {
+    const { vpa, amount } = query;
+    const commitment = generateCommitment(vpa);
+    const receiverRegistry = await this.prisma.keyWalletRegistry.findUnique({
+      where: { commitment, merchant: { verification: { isNot: null } } },
+    });
+
+    if (!receiverRegistry) {
+      throw new BadRequestException(
+        " Receiver either haven't got verified or registered. Get them register to earn rewards ",
+      );
+    }
+
+    return this.transferDigital(
+      { walletAddress: receiverRegistry.walletAddress, amount },
+      userId,
+    );
+  }
+
   async transferDigital(query: TransferParams, userId: number) {
     const { walletAddress: receiverWalletAddress, amount } = query;
     const sender = await this.prisma.user.findUnique({
@@ -99,27 +121,27 @@ export class PaymentService {
     const mint = new PublicKey(USDC_ADDRESS);
     try {
       const tokenAddress = await getUSDCAccount(owner);
-      const balance = await this.safeGetWalletBalance(
+      const account = await this.getOrCreateTokenAccount(
         tokenAddress,
         owner,
         mint,
       );
+
+      const balance = getUSDCUiAmount(Number(account.amount));
       return balance;
     } catch (_) {
       throw new InternalServerErrorException(' Failed to get wallet balance ');
     }
   }
 
-  private async safeGetWalletBalance(
+  private async getOrCreateTokenAccount(
     tokenAddress: PublicKey,
     owner: PublicKey,
     mint: PublicKey,
   ) {
     try {
       const tokenAccount = await getAccount(this.connection, tokenAddress);
-      const amount = getUSDCUiAmount(Number(tokenAccount.amount));
-
-      return amount;
+      return tokenAccount;
     } catch (error: unknown) {
       if (
         error instanceof TokenAccountNotFoundError ||
@@ -127,7 +149,6 @@ export class PaymentService {
       ) {
         try {
           const payer = getTreasuryPublicKey();
-
           const instruction = createAssociatedTokenAccountInstruction(
             payer,
             tokenAddress,
@@ -165,8 +186,7 @@ export class PaymentService {
         if (!account.mint.equals(mint)) throw new TokenInvalidMintError();
         if (!account.owner.equals(owner)) throw new TokenInvalidOwnerError();
 
-        const amount = getUSDCUiAmount(Number(account.amount));
-        return amount;
+        return account;
       } else {
         throw error;
       }

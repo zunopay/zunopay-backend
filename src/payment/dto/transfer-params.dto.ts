@@ -9,3 +9,12 @@ export class TransferParams {
   @IsNumber()
   amount: number;
 }
+
+export class TransferWithVpaParams {
+  @IsString()
+  vpa: string;
+
+  @TransformStringToNumber()
+  @IsNumber()
+  amount: number;
+}
