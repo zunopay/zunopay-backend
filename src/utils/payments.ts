@@ -9,7 +9,7 @@ import {
   PublicKey,
   Transaction,
 } from '@solana/web3.js';
-import { MIN_COMPUTE_PRICE, USDC_ADDRESS, USDC_DECIMALS } from 'src/constants';
+import { MIN_COMPUTE_PRICE, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { Currency } from '../types/payment';
 
 export function getCurrencyValue(key: string): Currency {

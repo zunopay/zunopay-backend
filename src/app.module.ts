@@ -12,6 +12,7 @@ import { SecurityConfig } from './config/config.interface';
 import { MerchantModule } from './merchant/merchant.module';
 import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
+import { CLIModule } from './cli/cli.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { PrivyModule } from './third-party/privy/privy.module';
     PaymentModule,
     MerchantModule,
     PrivyModule,
+    CLIModule,
   ],
   controllers: [AppController],
   providers: [AppService],

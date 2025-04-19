@@ -6,7 +6,7 @@ import {
   SphereTransferResponseData,
   SphereWalletAccount,
 } from './dto/types';
-import { BASE_SPHERE_URL } from 'src/constants';
+import { BASE_SPHERE_URL } from '../../constants';
 import { UserOfframpProvider } from '@prisma/client';
 import { constructDigitalTransferTransaction } from '../../utils/payments';
 import { Connection } from '@solana/web3.js';

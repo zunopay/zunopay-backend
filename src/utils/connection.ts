@@ -7,8 +7,8 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import axios from 'axios';
-import { CONFIG } from 'src/config/config';
-import { BASE_SPHERE_URL } from 'src/constants';
+import { CONFIG } from '../config/config';
+import { BASE_SPHERE_URL } from '../constants';
 import * as AES from 'crypto-js/aes';
 import * as Utf8 from 'crypto-js/enc-utf8';
 

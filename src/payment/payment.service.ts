@@ -33,7 +33,7 @@ import {
   MIN_COMPUTE_PRICE_IX,
   UPI_VPA_PREFIX,
   USDC_ADDRESS,
-} from 'src/constants';
+} from '../constants';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,

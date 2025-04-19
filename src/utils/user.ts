@@ -4,7 +4,7 @@ import {
   USERNAME_MAX_SIZE,
   USERNAME_MIN_SIZE,
   USERNAME_REGEX,
-} from 'src/constants';
+} from '../constants';
 
 export function findUsernameError(name: string) {
   if (typeof name !== 'string') {
