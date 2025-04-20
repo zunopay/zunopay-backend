@@ -9,6 +9,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { PaymentService } from '../payment/payment.service';
+import { SphereService } from '../third-party/sphere/sphere.service';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PaymentService } from '../payment/payment.service';
     JwtStrategy,
     PrivyService,
     PaymentService,
+    SphereService,
   ],
 })
 export class AuthModule {}

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
@@ -52,6 +53,7 @@ import {
   5. Offramp
 */
 
+@Injectable()
 export class PaymentService {
   private readonly connection: Connection;
 

@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
-  createTransferCheckedInstruction,
+  createTransferInstruction,
   getAssociatedTokenAddress,
 } from '@solana/spl-token';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@solana/web3.js';
 import { MIN_COMPUTE_PRICE, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { Currency } from '../types/payment';
+import { getIdentitySignature, getTreasuryPublicKey } from './connection';
 
 export function getCurrencyValue(key: string): Currency {
   const currency = key.replace(/\d+$/, '');
@@ -30,6 +31,7 @@ export async function constructDigitalTransferTransaction(
   const mint = new PublicKey(USDC_ADDRESS);
   const sourceOwner = new PublicKey(sender);
   const destinationOwner = new PublicKey(receiver);
+  const feePayer = getTreasuryPublicKey();
 
   const source = await getAssociatedTokenAddress(mint, sourceOwner, false);
   const destination = await getAssociatedTokenAddress(
@@ -38,27 +40,23 @@ export async function constructDigitalTransferTransaction(
     false,
   );
 
-  const transferInstruction = createTransferCheckedInstruction(
+  const transferInstruction = createTransferInstruction(
     source,
-    mint,
     destination,
     sourceOwner,
     amount,
-    USDC_DECIMALS,
   );
   const computeBudgetInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: MIN_COMPUTE_PRICE,
   });
   const latestBlockhash = await connection.getLatestBlockhash();
 
-  const transaction = new Transaction({
-    ...latestBlockhash,
-    feePayer: sourceOwner,
-  })
+  const transaction = new Transaction({ ...latestBlockhash, feePayer })
     .add(computeBudgetInstruction)
     .add(transferInstruction);
 
-  const serializedTransaction = transaction
+  const signedTransaction = getIdentitySignature(transaction);
+  const serializedTransaction = signedTransaction
     .serialize({
       requireAllSignatures: false,
     })
