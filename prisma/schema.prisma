@@ -11,7 +11,6 @@ enum Role {
   Admin
   KycVerifier
   Indiviual
-  Merchant
 }
 
 model User {
@@ -31,47 +30,32 @@ model User {
   nonce            String                @default(uuid())
   createdAt        DateTime              @default(now())
   region           SupportedRegion
-  merchant         Merchant?
   verifier         KycVerifier?
+  verification     UserKycVerification?
 }
 
-// TODO: Need more details
 model KycVerifier {
-  id                Int                       @id @default(autoincrement())
-  createdAt         DateTime                  @default(now())
-  deletedAt         DateTime?
-  userId            Int                       @unique
-  user              User                      @relation(fields: [userId], references: [id])
-  verifiedMerchants MerchantKycVerification[]
+  id            Int                   @id @default(autoincrement())
+  createdAt     DateTime              @default(now())
+  deletedAt     DateTime?
+  userId        Int                   @unique
+  user          User                  @relation(fields: [userId], references: [id])
+  verifiedUsers UserKycVerification[]
 }
 
-model MerchantKycVerification {
+model UserKycVerification {
   id         Int         @id @default(autoincrement())
   verifierId Int
   verifier   KycVerifier @relation(fields: [verifierId], references: [id])
-  merchantId Int         @unique
-  merchant   Merchant    @relation(fields: [merchantId], references: [id])
+  userId     Int         @unique
+  user       User        @relation(fields: [userId], references: [id])
   verifiedAt DateTime    @default(now())
 }
 
-// TODO: Need more details
-model Merchant {
-  id               Int                       @id @default(autoincrement())
-  displayName      String
-  registryId       Int                       @unique
-  registry         KeyWalletRegistry         @relation(fields: [registryId], references: [id])
-  offrampProviders MerchantOfframpProvider[]
-  userId           Int                       @unique
-  user             User                      @relation(fields: [userId], references: [id])
-  createdAt        DateTime                  @default(now())
-  verification     MerchantKycVerification?
-}
-
 model KeyWalletRegistry {
-  id            Int       @id @default(autoincrement())
-  commitment    String    @unique
+  id            Int     @id @default(autoincrement())
+  commitment    String? @unique
   walletAddress String
-  merchant      Merchant?
   user          User?
 }
 
@@ -81,19 +65,6 @@ enum SupportedRegion {
 
 enum OfframpProvider {
   SpherePay
-}
-
-model MerchantOfframpProvider {
-  id              Int             @id @default(autoincrement())
-  merchantId      Int
-  merchant        Merchant        @relation(fields: [merchantId], references: [id])
-  customerId      String
-  bankAccountId   String
-  walletAccountId String
-  type            OfframpProvider
-  kyb             Boolean         @default(false)
-
-  @@unique([merchantId, type])
 }
 
 model UserOfframpProvider {

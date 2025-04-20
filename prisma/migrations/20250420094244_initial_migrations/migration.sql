@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('Admin', 'KycVerifier', 'Indiviual', 'Merchant');
+CREATE TYPE "Role" AS ENUM ('Admin', 'KycVerifier', 'Indiviual');
 
 -- CreateEnum
 CREATE TYPE "SupportedRegion" AS ENUM ('EU');
@@ -38,46 +38,22 @@ CREATE TABLE "KycVerifier" (
 );
 
 -- CreateTable
-CREATE TABLE "MerchantKycVerification" (
+CREATE TABLE "UserKycVerification" (
     "id" SERIAL NOT NULL,
     "verifierId" INTEGER NOT NULL,
-    "merchantId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
     "verifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "MerchantKycVerification_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Merchant" (
-    "id" SERIAL NOT NULL,
-    "displayName" TEXT NOT NULL,
-    "registryId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Merchant_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "UserKycVerification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "KeyWalletRegistry" (
     "id" SERIAL NOT NULL,
-    "commitment" TEXT NOT NULL,
+    "commitment" TEXT,
     "walletAddress" TEXT NOT NULL,
 
     CONSTRAINT "KeyWalletRegistry_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "MerchantOfframpProvider" (
-    "id" SERIAL NOT NULL,
-    "merchantId" INTEGER NOT NULL,
-    "customerId" TEXT NOT NULL,
-    "bankAccountId" TEXT NOT NULL,
-    "walletAccountId" TEXT NOT NULL,
-    "type" "OfframpProvider" NOT NULL,
-    "kyb" BOOLEAN NOT NULL DEFAULT false,
-
-    CONSTRAINT "MerchantOfframpProvider_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -106,19 +82,10 @@ CREATE UNIQUE INDEX "User_registryId_key" ON "User"("registryId");
 CREATE UNIQUE INDEX "KycVerifier_userId_key" ON "KycVerifier"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MerchantKycVerification_merchantId_key" ON "MerchantKycVerification"("merchantId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Merchant_registryId_key" ON "Merchant"("registryId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Merchant_userId_key" ON "Merchant"("userId");
+CREATE UNIQUE INDEX "UserKycVerification_userId_key" ON "UserKycVerification"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "KeyWalletRegistry_commitment_key" ON "KeyWalletRegistry"("commitment");
-
--- CreateIndex
-CREATE UNIQUE INDEX "MerchantOfframpProvider_merchantId_type_key" ON "MerchantOfframpProvider"("merchantId", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserOfframpProvider_userId_offrampProvider_key" ON "UserOfframpProvider"("userId", "offrampProvider");
@@ -130,19 +97,10 @@ ALTER TABLE "User" ADD CONSTRAINT "User_registryId_fkey" FOREIGN KEY ("registryI
 ALTER TABLE "KycVerifier" ADD CONSTRAINT "KycVerifier_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MerchantKycVerification" ADD CONSTRAINT "MerchantKycVerification_verifierId_fkey" FOREIGN KEY ("verifierId") REFERENCES "KycVerifier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserKycVerification" ADD CONSTRAINT "UserKycVerification_verifierId_fkey" FOREIGN KEY ("verifierId") REFERENCES "KycVerifier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MerchantKycVerification" ADD CONSTRAINT "MerchantKycVerification_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Merchant" ADD CONSTRAINT "Merchant_registryId_fkey" FOREIGN KEY ("registryId") REFERENCES "KeyWalletRegistry"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Merchant" ADD CONSTRAINT "Merchant_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "MerchantOfframpProvider" ADD CONSTRAINT "MerchantOfframpProvider_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserKycVerification" ADD CONSTRAINT "UserKycVerification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserOfframpProvider" ADD CONSTRAINT "UserOfframpProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

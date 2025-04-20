@@ -8,16 +8,32 @@ import { Role, User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
-import { GoogleUserPayload } from '../auth/dto/authorization.dto';
+import { GoogleUserPayload, UserPayload } from '../auth/dto/authorization.dto';
 import { AuthService } from '../auth/auth.service';
-import { hashPassword } from '../utils/hash';
+import { generateCommitment, hashPassword } from '../utils/hash';
 import { LoginDto } from './dto/login.dto';
 import { isEmail } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { PaymentService } from 'src/payment/payment.service';
+import { VerifyUserDto } from './dto/verifiy-user.dto';
 
 @Injectable()
 export class UsersService {
+    /**
+   * Onboarding flow:
+   *
+   * 1. Perform checks
+   * 2. Create wallet and vpa commitment
+   * 3. Register
+   *
+   * -- Only when offramping.
+   * 1. Create customer
+   * 2. Generate TOS
+   * 3. KYB
+   * 4. Create Offramp provider wallet account
+   * 5. Create Offramp provider bank account
+   * */
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
@@ -49,13 +65,13 @@ export class UsersService {
   async fetchMe(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { merchant: { include: { verification: true } } },
+      include: {  verification: true },
     });
 
     return user;
   }
 
-  async findOne(username: string): Promise<User> {
+  async findOneByUsername(username: string): Promise<User> {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
@@ -92,10 +108,13 @@ export class UsersService {
         username: username.toLowerCase(),
         password: hashedPassword,
         region,
-        role,
+        role : Role[role],
         emailVerifiedAt,
       },
     });
+
+    // TODO:
+    // const walletUser = await this.privyService.generateWallet(user.id);
 
     return user;
   }
@@ -159,5 +178,68 @@ export class UsersService {
       }
       return false;
     }
+  }
+
+  async startKyc(userId:number, vpa: string){
+    const commitment = generateCommitment(vpa);
+
+    // check if verified vpa already exists
+    const registry = await this.prisma.keyWalletRegistry.findUnique({
+      where: { commitment, user: { verification: { isNot: null } } },
+    });
+
+    const isCommitmentExists = !!registry
+    if (isCommitmentExists) {
+      throw new BadRequestException(
+        ' Payment address already exists, use different payment address for this account. Contact us if not you ',
+      );
+    }
+
+    await this.prisma.keyWalletRegistry.update({
+      where:{ id: registry.id },
+      data: { commitment, user:{ connect:{ id: userId}  } }
+    })
+  }
+
+  async verify(kycVerifier: UserPayload, body: VerifyUserDto) {
+    const { vpa, username } = body;
+    
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: {  registry: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(' User does not exists ');
+    }
+
+    if (!user.emailVerifiedAt) {
+      throw new BadRequestException(' User email is not verified ');
+    }
+
+    const verifierData = await this.prisma.kycVerifier.findUnique({
+      where: { userId: kycVerifier.id },
+    });
+
+    if (!verifierData || verifierData?.deletedAt) {
+      throw new UnauthorizedException();
+    }
+
+    const commitment = generateCommitment(vpa);
+
+    if (user.registry.commitment != commitment) {
+      throw new BadRequestException("Virtual private address doesn't match");
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verification: {
+          create: {
+            verifier: { connect: { id: verifierData.id } },
+          },
+        },
+      },
+    });
   }
 }

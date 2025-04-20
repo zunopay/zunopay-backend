@@ -82,7 +82,7 @@ export class PaymentService {
     const { vpa, amount } = query;
     const commitment = generateCommitment(vpa);
     const receiverRegistry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { commitment, merchant: { verification: { isNot: null } } },
+      where: { commitment, user: { verification: { isNot: null } } },
     });
 
     if (!receiverRegistry) {

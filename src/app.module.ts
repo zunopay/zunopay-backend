@@ -9,10 +9,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { SecurityConfig } from './config/config.interface';
-import { MerchantModule } from './merchant/merchant.module';
 import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
-import { CLIModule } from './cli/cli.module';
 
 @Module({
   imports: [
@@ -43,9 +41,7 @@ import { CLIModule } from './cli/cli.module';
     UsersModule,
     AuthModule,
     PaymentModule,
-    MerchantModule,
     PrivyModule,
-    CLIModule,
   ],
   controllers: [AppController],
   providers: [AppService],

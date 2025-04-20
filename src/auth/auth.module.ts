@@ -7,7 +7,6 @@ import { SecurityConfig } from '../config/config.interface';
 import { UsersService } from '../users/users.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
-import { MerchantService } from '../merchant/merchant.service';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { PaymentService } from '../payment/payment.service';
 
@@ -31,7 +30,6 @@ import { PaymentService } from '../payment/payment.service';
     AuthService,
     UsersService,
     JwtStrategy,
-    MerchantService,
     PrivyService,
     PaymentService,
   ],

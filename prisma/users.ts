@@ -1,5 +1,5 @@
 import { Prisma, SupportedRegion } from '@prisma/client';
-import { generateCommitment } from './merchants';
+import { sha256 } from 'js-sha256';
 
 // Don't worry champs, these passwords are used only for localhost seeding
 export const usersToSeed = async (): Promise<
@@ -19,3 +19,8 @@ export const usersToSeed = async (): Promise<
     },
   }
 );
+
+export function generateCommitment(vpa: string) {
+  const data = `#${vpa}#`;
+  return sha256(data);
+}
