@@ -24,15 +24,12 @@ export class UserController {
 
   @RolesGuard([Role.KycVerifier])
   @Patch('/verify')
-  async verify(
-    @UserEntity() user: UserPayload,
-    @Body() body: VerifyUserDto,
-  ) {
+  async verify(@UserEntity() user: UserPayload, @Body() body: VerifyUserDto) {
     await this.userService.verify(user, body);
   }
 
   @Post('/start-kyc')
-  async startKyc(@UserEntity() user: UserPayload, @Body() body: StartKycDto){
+  async startKyc(@UserEntity() user: UserPayload, @Body() body: StartKycDto) {
     await this.userService.startKyc(user.id, body.vpa);
   }
 

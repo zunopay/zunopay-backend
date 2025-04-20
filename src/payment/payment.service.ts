@@ -10,11 +10,9 @@ import {
   getCurrencyValue,
   getUSDCAccount,
   getUSDCUiAmount,
+  isSolanaAddress,
 } from '../utils/payments';
-import {
-  TransferParams,
-  TransferWithVpaParams,
-} from './dto/transfer-params.dto';
+import { TransferParams } from './dto/transfer-params.dto';
 import {
   Connection,
   PublicKey,
@@ -78,31 +76,15 @@ export class PaymentService {
     };
   }
 
-  async transferDigitalWithVpa(query: TransferWithVpaParams, userId: number) {
-    const { vpa, amount } = query;
-    const commitment = generateCommitment(vpa);
-    const receiverRegistry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { commitment, user: { verification: { isNot: null } } },
-    });
-
-    if (!receiverRegistry) {
-      throw new BadRequestException(
-        " Receiver either haven't got verified or registered. Get them register to earn rewards ",
-      );
-    }
-
-    return this.transferDigital(
-      { walletAddress: receiverRegistry.walletAddress, amount },
-      userId,
-    );
-  }
-
   async transferDigital(query: TransferParams, userId: number) {
-    const { walletAddress: receiverWalletAddress, amount } = query;
+    const { vpa, amount } = query;
+
     const sender = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { registry: { select: { walletAddress: true } } },
     });
+
+    const receiverWalletAddress = await this.resolveWalletAddress(vpa);
 
     // Construct transaction
     const senderWalletAddress = sender.registry.walletAddress;
@@ -215,6 +197,25 @@ export class PaymentService {
     } else {
       throw new BadRequestException('Region not supported');
     }
+  }
+
+  private async resolveWalletAddress(vpa: string) {
+    if (isSolanaAddress(vpa)) {
+      return vpa;
+    }
+
+    const commitment = generateCommitment(vpa);
+    const receiverRegistry = await this.prisma.keyWalletRegistry.findUnique({
+      where: { commitment, user: { verification: { isNot: null } } },
+    });
+
+    if (!receiverRegistry) {
+      throw new BadRequestException(
+        " Receiver either haven't got verified or registered. Get them register to earn rewards ",
+      );
+    }
+
+    return receiverRegistry.walletAddress;
   }
 
   private decodeQr(encodedQr: string) {

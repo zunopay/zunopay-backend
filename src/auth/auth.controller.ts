@@ -2,10 +2,7 @@ import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service';
 import { GoogleRegisterDto, RegisterDto } from 'src/users/dto/register.dto';
-import {
-  Authorization,
-  GoogleUserPayload,
-} from './dto/authorization.dto';
+import { Authorization, GoogleUserPayload } from './dto/authorization.dto';
 import { GoogleUserEntity } from '../decorators/user.decorator';
 import { GoogleUserAuth } from '../guards/google-user-auth';
 import { AuthService } from './auth.service';

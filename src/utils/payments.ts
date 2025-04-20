@@ -78,3 +78,11 @@ export function getUSDCUiAmount(amount: number) {
   const uiAmount = (amount / USDC_DECIMALS).toFixed(3);
   return uiAmount;
 }
+
+export function isSolanaAddress(value: unknown): boolean {
+  try {
+    return typeof value === 'string' && PublicKey.isOnCurve(value);
+  } catch {
+    return false;
+  }
+}

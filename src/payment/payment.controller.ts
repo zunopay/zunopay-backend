@@ -3,10 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { GetReceiverParams } from './dto/get-receiver-params.dto';
 import { PaymentService } from './payment.service';
 import { toReceiverDto } from './dto/receiver.dto';
-import {
-  TransferParams,
-  TransferWithVpaParams,
-} from './dto/transfer-params.dto';
+import { TransferParams } from './dto/transfer-params.dto';
 import { UserEntity } from 'src/decorators/user.decorator';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserAuth } from 'src/guards/user-auth';
@@ -33,17 +30,6 @@ export class PaymentController {
       query,
       user.id,
     );
-    return transferTransaction;
-  }
-
-  @UserAuth()
-  @Get('get/transfer-with-vpa')
-  async transferWithVpa(
-    @Query() query: TransferWithVpaParams,
-    @UserEntity() user: UserPayload,
-  ) {
-    const transferTransaction =
-      await this.paymentService.transferDigitalWithVpa(query, user.id);
     return transferTransaction;
   }
 }

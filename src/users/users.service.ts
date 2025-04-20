@@ -19,7 +19,7 @@ import { VerifyUserDto } from './dto/verifiy-user.dto';
 
 @Injectable()
 export class UsersService {
-    /**
+  /**
    * Onboarding flow:
    *
    * 1. Perform checks
@@ -65,7 +65,7 @@ export class UsersService {
   async fetchMe(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: {  verification: true },
+      include: { verification: true },
     });
 
     return user;
@@ -108,7 +108,7 @@ export class UsersService {
         username: username.toLowerCase(),
         password: hashedPassword,
         region,
-        role : Role[role],
+        role: Role[role],
         emailVerifiedAt,
       },
     });
@@ -180,7 +180,7 @@ export class UsersService {
     }
   }
 
-  async startKyc(userId:number, vpa: string){
+  async startKyc(userId: number, vpa: string) {
     const commitment = generateCommitment(vpa);
 
     // check if verified vpa already exists
@@ -188,7 +188,7 @@ export class UsersService {
       where: { commitment, user: { verification: { isNot: null } } },
     });
 
-    const isCommitmentExists = !!registry
+    const isCommitmentExists = !!registry;
     if (isCommitmentExists) {
       throw new BadRequestException(
         ' Payment address already exists, use different payment address for this account. Contact us if not you ',
@@ -196,17 +196,17 @@ export class UsersService {
     }
 
     await this.prisma.keyWalletRegistry.update({
-      where:{ id: registry.id },
-      data: { commitment, user:{ connect:{ id: userId}  } }
-    })
+      where: { id: registry.id },
+      data: { commitment, user: { connect: { id: userId } } },
+    });
   }
 
   async verify(kycVerifier: UserPayload, body: VerifyUserDto) {
     const { vpa, username } = body;
-    
+
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: {  registry: true },
+      include: { registry: true },
     });
 
     if (!user) {
