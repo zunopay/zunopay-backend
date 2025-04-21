@@ -33,6 +33,9 @@ export class RegisterDto {
   @ApiProperty({ enum: AllowedRole })
   @IsEnum(AllowedRole)
   role: AllowedRole;
+
+  @IsString()
+  referralCode: string;
 }
 
 export class GoogleRegisterDto extends OmitType(RegisterDto, [

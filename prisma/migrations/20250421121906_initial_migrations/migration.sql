@@ -28,6 +28,13 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "ReferralCode" (
+    "code" TEXT NOT NULL,
+    "referrerId" INTEGER NOT NULL,
+    "refereeId" INTEGER
+);
+
+-- CreateTable
 CREATE TABLE "KycVerifier" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -79,6 +86,12 @@ CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_registryId_key" ON "User"("registryId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ReferralCode_code_key" ON "ReferralCode"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ReferralCode_refereeId_key" ON "ReferralCode"("refereeId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "KycVerifier_userId_key" ON "KycVerifier"("userId");
 
 -- CreateIndex
@@ -92,6 +105,12 @@ CREATE UNIQUE INDEX "UserOfframpProvider_userId_offrampProvider_key" ON "UserOff
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_registryId_fkey" FOREIGN KEY ("registryId") REFERENCES "KeyWalletRegistry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReferralCode" ADD CONSTRAINT "ReferralCode_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReferralCode" ADD CONSTRAINT "ReferralCode_refereeId_fkey" FOREIGN KEY ("refereeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "KycVerifier" ADD CONSTRAINT "KycVerifier_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

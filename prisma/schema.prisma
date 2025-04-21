@@ -32,6 +32,16 @@ model User {
   region           SupportedRegion
   verifier         KycVerifier?
   verification     UserKycVerification?
+  referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
+  referredBy       ReferralCode?         @relation("ReferredUser")
+}
+
+model ReferralCode {
+  code       String @unique
+  referrerId Int
+  referrer   User   @relation("ReferrerCodes", fields: [referrerId], references: [id])
+  refereeId  Int?   @unique
+  referee    User?  @relation("ReferredUser", fields: [refereeId], references: [id])
 }
 
 model KycVerifier {

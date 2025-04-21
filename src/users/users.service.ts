@@ -97,22 +97,36 @@ export class UsersService {
   }
 
   async register(body: RegisterDto): Promise<User> {
-    const { email, password, username, region, role } = body;
+    const { email, password, username, region, role, referralCode } = body;
 
     validateEmail(email);
 
     const hashedPassword = await hashPassword(password);
     const emailVerifiedAt = !password ? new Date() : undefined;
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        username: username.toLowerCase(),
-        password: hashedPassword,
-        region,
-        role: Role[role],
-        emailVerifiedAt,
-      },
+    const user = await this.prisma.$transaction(async (tx) => {
+      const refCode = await tx.referralCode.findUnique({
+        where: { code: referralCode },
+      });
+
+      const isReferralCodeAvailable = refCode && !refCode.refereeId;
+      if (!isReferralCodeAvailable) {
+        throw new BadRequestException(' Referral code is not available ');
+      }
+
+      const user = await tx.user.create({
+        data: {
+          email: email.toLowerCase(),
+          username: username.toLowerCase(),
+          password: hashedPassword,
+          region,
+          role: Role[role],
+          emailVerifiedAt,
+          referredBy: { connect: { code: referralCode } },
+        },
+      });
+
+      return user;
     });
 
     return user;
@@ -230,6 +244,15 @@ export class UsersService {
       where: { id: registry.id },
       data: { commitment, user: { connect: { id: userId } } },
     });
+  }
+
+  private async checkIfReferralCodeAvailable(refCode: string) {
+    const referralCode = await this.prisma.referralCode.findUnique({
+      where: { code: refCode },
+    });
+
+    const isAvailable = referralCode && !referralCode.refereeId;
+    return isAvailable;
   }
 
   async verify(kycVerifier: UserPayload, body: VerifyUserDto) {
