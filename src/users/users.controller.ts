@@ -28,6 +28,12 @@ export class UserController {
     await this.userService.verify(user, body);
   }
 
+  @UserAuth()
+  @Patch('/verify-email')
+  async verifyEmail(@UserEntity() user: UserPayload) {
+    await this.userService.verifyEmail(user.id);
+  }
+
   @Post('/start-kyc')
   async startKyc(@UserEntity() user: UserPayload, @Body() body: StartKycDto) {
     await this.userService.startKyc(user.id, body.vpa);

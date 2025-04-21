@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrivyClient } from '@privy-io/server-auth';
 import { PrismaService } from 'nestjs-prisma';
 
@@ -13,18 +13,17 @@ export class PrivyService {
     );
   }
 
-  async generateWallet(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  async authenticateUser(email: string) {
+    const user = await this.client.getUserByEmail(email);
+    return { isAuthenticated: !!user.createdAt, wallet: user.wallet?.address };
+  }
 
-    if (!user.emailVerifiedAt) {
-      throw new BadRequestException(' User email is not verified ');
-    }
-
+  async generateWallet(email: string) {
     const privyUser = await this.client.importUser({
       linkedAccounts: [
         {
           type: 'email',
-          address: user.email,
+          address: email,
         },
       ],
       createSolanaWallet: true,

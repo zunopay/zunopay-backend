@@ -14,8 +14,9 @@ import { generateCommitment, hashPassword } from '../utils/hash';
 import { LoginDto } from './dto/login.dto';
 import { isEmail } from 'class-validator';
 import * as bcrypt from 'bcrypt';
-import { PaymentService } from 'src/payment/payment.service';
+import { PaymentService } from '../payment/payment.service';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
+import { PrivyService } from '../third-party/privy/privy.service';
 
 @Injectable()
 export class UsersService {
@@ -38,6 +39,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly paymentService: PaymentService,
+    private readonly privyService: PrivyService,
   ) {}
 
   async getBalance(userId: number) {
@@ -113,9 +115,6 @@ export class UsersService {
       },
     });
 
-    // TODO:
-    // const walletUser = await this.privyService.generateWallet(user.id);
-
     return user;
   }
 
@@ -178,6 +177,38 @@ export class UsersService {
       }
       return false;
     }
+  }
+
+  async verifyEmail(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (user.emailVerifiedAt) {
+      throw new UnauthorizedException(' Email is already verified ');
+    }
+
+    const { isAuthenticated, wallet } =
+      await this.privyService.authenticateUser(user.email);
+
+    if (!isAuthenticated) {
+      throw new UnauthorizedException(
+        ' User has not authenticated their email ',
+      );
+    }
+
+    let walletAddress: string;
+    if (!wallet) {
+      const walletUser = await this.privyService.generateWallet(user.email);
+      walletAddress = walletUser.wallet.address;
+    }
+
+    walletAddress = wallet;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifiedAt: new Date(),
+        registry: { create: { walletAddress } },
+      },
+    });
   }
 
   async startKyc(userId: number, vpa: string) {
