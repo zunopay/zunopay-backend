@@ -240,9 +240,11 @@ export class UsersService {
       );
     }
 
-    await this.prisma.keyWalletRegistry.update({
-      where: { id: registry.id },
-      data: { commitment, user: { connect: { id: userId } } },
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        registry: { update: { commitment } },
+      },
     });
   }
 

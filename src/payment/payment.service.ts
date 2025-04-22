@@ -43,6 +43,7 @@ import {
   TokenInvalidMintError,
   TokenInvalidOwnerError,
 } from '@solana/spl-token';
+import { Currency } from 'src/types/payment';
 
 /*
   TODO: 
@@ -73,7 +74,7 @@ export class PaymentService {
 
     return {
       ...receiver,
-      vpa: generateProtectedVpa(receiver.vpa),
+      vpa: receiver.vpa,
       walletAddress: registry.walletAddress,
     };
   }
@@ -217,7 +218,7 @@ export class PaymentService {
   }
 
   private decodeQr(encodedQr: string) {
-    const qr = decodeURI(encodedQr);
+    const qr = decodeURIComponent(encodedQr);
 
     if (this.isUPIQr(qr)) {
       return this.parseUpiQr(qr);
@@ -281,18 +282,15 @@ export class PaymentService {
     const qrUrl = new URL(qr);
     const upiId = qrUrl.searchParams.get('pa');
     const name = qrUrl.searchParams.get('pn');
-    const amount = qrUrl.searchParams.get('am');
-    const currency = qrUrl.searchParams.get('cu');
 
-    if (isNull(upiId) || isNull(name) || isNull(amount) || isNull(currency)) {
+    if (isNull(upiId) || isNull(name)) {
       throw new BadRequestException('Invalid Qr');
     }
 
-    const cleanCurrency = getCurrencyValue(currency);
     return {
       vpa: upiId,
       name,
-      currency: cleanCurrency,
+      currency: Currency.INR,
     };
   }
 }

@@ -34,6 +34,7 @@ export class UserController {
     await this.userService.verifyEmail(user.id);
   }
 
+  @UserAuth()
   @Post('/start-kyc')
   async startKyc(@UserEntity() user: UserPayload, @Body() body: StartKycDto) {
     await this.userService.startKyc(user.id, body.vpa);
