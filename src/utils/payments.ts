@@ -73,7 +73,7 @@ export async function getUSDCAccount(owner: PublicKey) {
 }
 
 export function getUSDCUiAmount(amount: number) {
-  const uiAmount = (amount / USDC_DECIMALS).toFixed(3);
+  const uiAmount = (amount / Math.pow(10, USDC_DECIMALS)).toFixed(3);
   return uiAmount;
 }
 

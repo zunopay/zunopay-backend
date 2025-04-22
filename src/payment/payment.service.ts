@@ -152,10 +152,6 @@ export class PaymentService {
 
           const transaction = new VersionedTransaction(transactionMessage);
           const signedTransaction = getIdentitySignature(transaction);
-
-          const rawTransaction = Buffer.from(signedTransaction.serialize());
-          console.log(rawTransaction.toString('base64'));
-
           const signature = await this.connection.sendTransaction(
             signedTransaction,
             { skipPreflight: true },
