@@ -209,13 +209,13 @@ export class UsersService {
       );
     }
 
-    let walletAddress: string;
+    let walletAddress: string = wallet;
+
     if (!wallet) {
       const walletUser = await this.privyService.generateWallet(user.email);
-      walletAddress = walletUser.wallet.address;
+      walletAddress = walletUser.wallet?.address;
     }
 
-    walletAddress = wallet;
     await this.prisma.user.update({
       where: { id: userId },
       data: {
