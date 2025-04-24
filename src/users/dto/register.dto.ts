@@ -11,7 +11,7 @@ import { IsValidUsername } from '../../decorators/isValidUsername';
 
 enum AllowedRole {
   Merchant = 'Merchant',
-  Indiviual = 'Indiviual',
+  Individual = 'Individual',
 }
 
 export class RegisterDto {

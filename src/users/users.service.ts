@@ -55,7 +55,7 @@ export class UsersService {
     }
 
     const balance = await this.paymentService.getWalletBalance(
-      user.registry.walletAddress,
+      user.walletAddress,
     );
     return balance;
   }
@@ -67,10 +67,13 @@ export class UsersService {
   async fetchMe(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { verification: true },
+      include: { registry: { select: { verification: true } } },
     });
 
-    return user;
+    if (!user) throw new Error('User not found');
+
+    const { registry, ...rest } = user;
+    return { ...rest, verification: !!registry?.verification };
   }
 
   async findOneByUsername(username: string): Promise<User> {
@@ -220,7 +223,7 @@ export class UsersService {
       where: { id: userId },
       data: {
         emailVerifiedAt: new Date(),
-        registry: { create: { walletAddress } },
+        walletAddress,
       },
     });
   }
@@ -229,8 +232,8 @@ export class UsersService {
     const commitment = generateCommitment(vpa);
 
     // check if verified vpa already exists
-    const registry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { commitment, user: { verification: { isNot: null } } },
+    const registry = await this.prisma.keyWalletRegistry.findFirst({
+      where: { commitment, verification: { isNot: null } },
     });
 
     const isCommitmentExists = !!registry;
@@ -243,7 +246,7 @@ export class UsersService {
     await this.prisma.user.update({
       where: { id: userId },
       data: {
-        registry: { update: { commitment } },
+        registry: { create: { commitment } },
       },
     });
   }
@@ -257,7 +260,7 @@ export class UsersService {
     return isAvailable;
   }
 
-  async verify(kycVerifier: UserPayload, body: VerifyUserDto) {
+  async verifyVpa(kycVerifier: UserPayload, body: VerifyUserDto) {
     const { vpa, username } = body;
 
     const user = await this.prisma.user.findUnique({
@@ -266,11 +269,11 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(' User does not exists ');
+      throw new NotFoundException('User does not exist');
     }
 
     if (!user.emailVerifiedAt) {
-      throw new BadRequestException(' User email is not verified ');
+      throw new BadRequestException('User email is not verified');
     }
 
     const verifierData = await this.prisma.kycVerifier.findUnique({
@@ -283,16 +286,20 @@ export class UsersService {
 
     const commitment = generateCommitment(vpa);
 
-    if (user.registry.commitment != commitment) {
+    if (!user.registry || user.registry.commitment !== commitment) {
       throw new BadRequestException("Virtual private address doesn't match");
     }
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        verification: {
-          create: {
-            verifier: { connect: { id: verifierData.id } },
+        registry: {
+          update: {
+            verification: {
+              create: {
+                verifier: { connect: { id: verifierData.id } },
+              },
+            },
           },
         },
       },

@@ -23,7 +23,7 @@ export function toReceiverDto(input: ReceiverBankingDetail) {
   const plainReceiverDto: ReceiverDto = {
     vpa: input.vpa,
     name: input.name,
-    walletAddress: 'TESTTEST', //TODO: Change
+    walletAddress: input.walletAddress,
     currency: input.currency,
   };
 

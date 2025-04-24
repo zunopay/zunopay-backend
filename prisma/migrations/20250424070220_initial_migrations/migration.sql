@@ -2,7 +2,7 @@
 CREATE TYPE "Role" AS ENUM ('Admin', 'KycVerifier', 'Indiviual');
 
 -- CreateEnum
-CREATE TYPE "SupportedRegion" AS ENUM ('EU');
+CREATE TYPE "SupportedRegion" AS ENUM ('EU', 'IN', 'BR', 'SG');
 
 -- CreateEnum
 CREATE TYPE "OfframpProvider" AS ENUM ('SpherePay');
@@ -19,7 +19,7 @@ CREATE TABLE "User" (
     "lastLogin" TIMESTAMP(3),
     "lastActiveAt" TIMESTAMP(3),
     "emailVerifiedAt" TIMESTAMP(3),
-    "registryId" INTEGER,
+    "walletAddress" TEXT,
     "nonce" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "region" "SupportedRegion" NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE "KycVerifier" (
 CREATE TABLE "UserKycVerification" (
     "id" SERIAL NOT NULL,
     "verifierId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "registryId" INTEGER NOT NULL,
     "verifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserKycVerification_pkey" PRIMARY KEY ("id")
@@ -57,8 +57,8 @@ CREATE TABLE "UserKycVerification" (
 -- CreateTable
 CREATE TABLE "KeyWalletRegistry" (
     "id" SERIAL NOT NULL,
-    "commitment" TEXT,
-    "walletAddress" TEXT NOT NULL,
+    "commitment" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
 
     CONSTRAINT "KeyWalletRegistry_pkey" PRIMARY KEY ("id")
 );
@@ -83,7 +83,7 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_registryId_key" ON "User"("registryId");
+CREATE UNIQUE INDEX "User_walletAddress_key" ON "User"("walletAddress");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ReferralCode_code_key" ON "ReferralCode"("code");
@@ -95,16 +95,13 @@ CREATE UNIQUE INDEX "ReferralCode_refereeId_key" ON "ReferralCode"("refereeId");
 CREATE UNIQUE INDEX "KycVerifier_userId_key" ON "KycVerifier"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserKycVerification_userId_key" ON "UserKycVerification"("userId");
+CREATE UNIQUE INDEX "UserKycVerification_registryId_key" ON "UserKycVerification"("registryId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "KeyWalletRegistry_commitment_key" ON "KeyWalletRegistry"("commitment");
+CREATE UNIQUE INDEX "KeyWalletRegistry_userId_key" ON "KeyWalletRegistry"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserOfframpProvider_userId_offrampProvider_key" ON "UserOfframpProvider"("userId", "offrampProvider");
-
--- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_registryId_fkey" FOREIGN KEY ("registryId") REFERENCES "KeyWalletRegistry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ReferralCode" ADD CONSTRAINT "ReferralCode_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -119,7 +116,10 @@ ALTER TABLE "KycVerifier" ADD CONSTRAINT "KycVerifier_userId_fkey" FOREIGN KEY (
 ALTER TABLE "UserKycVerification" ADD CONSTRAINT "UserKycVerification_verifierId_fkey" FOREIGN KEY ("verifierId") REFERENCES "KycVerifier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserKycVerification" ADD CONSTRAINT "UserKycVerification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserKycVerification" ADD CONSTRAINT "UserKycVerification_registryId_fkey" FOREIGN KEY ("registryId") REFERENCES "KeyWalletRegistry"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KeyWalletRegistry" ADD CONSTRAINT "KeyWalletRegistry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserOfframpProvider" ADD CONSTRAINT "UserOfframpProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

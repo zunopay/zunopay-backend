@@ -11,6 +11,7 @@ enum Role {
   Admin
   KycVerifier
   Indiviual
+  Merchant
 }
 
 model User {
@@ -24,14 +25,13 @@ model User {
   lastLogin        DateTime?
   lastActiveAt     DateTime?
   emailVerifiedAt  DateTime?
-  registryId       Int?                  @unique
-  registry         KeyWalletRegistry?    @relation(fields: [registryId], references: [id])
+  walletAddress    String?              @unique
+  registry         KeyWalletRegistry?
   offrampProviders UserOfframpProvider[]
   nonce            String                @default(uuid())
   createdAt        DateTime              @default(now())
   region           SupportedRegion
   verifier         KycVerifier?
-  verification     UserKycVerification?
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
 }
@@ -54,23 +54,28 @@ model KycVerifier {
 }
 
 model UserKycVerification {
-  id         Int         @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   verifierId Int
-  verifier   KycVerifier @relation(fields: [verifierId], references: [id])
-  userId     Int         @unique
-  user       User        @relation(fields: [userId], references: [id])
-  verifiedAt DateTime    @default(now())
+  verifier   KycVerifier       @relation(fields: [verifierId], references: [id])
+  registryId Int               @unique
+  registry   KeyWalletRegistry @relation(fields: [registryId], references: [id])
+  verifiedAt DateTime          @default(now())
 }
 
+//TODO: User partial indexing to get database level uniqueness
 model KeyWalletRegistry {
-  id            Int     @id @default(autoincrement())
-  commitment    String? @unique
-  walletAddress String
-  user          User?
+  id           Int                  @id @default(autoincrement())
+  commitment   String
+  user         User                 @relation(fields: [userId], references: [id])
+  userId       Int                  @unique
+  verification UserKycVerification?
 }
 
 enum SupportedRegion {
   EU
+  IN
+  BR
+  SG
 }
 
 enum OfframpProvider {

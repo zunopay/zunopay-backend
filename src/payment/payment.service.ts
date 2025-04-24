@@ -27,7 +27,7 @@ import {
 } from '../utils/connection';
 import { PrismaService } from 'nestjs-prisma';
 import { SphereService } from '../third-party/sphere/sphere.service';
-import { generateCommitment, generateProtectedVpa } from '../utils/hash';
+import { generateCommitment } from '../utils/hash';
 import {
   MIN_COMPUTE_PRICE_IX,
   UPI_VPA_PREFIX,
@@ -68,14 +68,15 @@ export class PaymentService {
   async getReceiver(encodedQr: string): Promise<ReceiverBankingDetail> {
     const receiver = this.decodeQr(encodedQr);
     const commitment = generateCommitment(receiver.vpa);
-    const registry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { commitment },
+    const registry = await this.prisma.keyWalletRegistry.findFirst({
+      where: { commitment, verification: { isNot: null } },
+      include: { user: true },
     });
 
     return {
       ...receiver,
       vpa: receiver.vpa,
-      walletAddress: registry.walletAddress,
+      walletAddress: registry.user.walletAddress,
     };
   }
 
@@ -84,13 +85,12 @@ export class PaymentService {
 
     const sender = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { registry: { select: { walletAddress: true } } },
     });
 
     const receiverWalletAddress = await this.resolveWalletAddress(vpa);
 
     // Construct transaction
-    const senderWalletAddress = sender.registry.walletAddress;
+    const senderWalletAddress = sender.walletAddress;
     const transaction = await constructDigitalTransferTransaction(
       this.connection,
       senderWalletAddress,
@@ -204,8 +204,9 @@ export class PaymentService {
     }
 
     const commitment = generateCommitment(vpa);
-    const receiverRegistry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { commitment, user: { verification: { isNot: null } } },
+    const receiverRegistry = await this.prisma.keyWalletRegistry.findFirst({
+      where: { commitment, verification: { isNot: null } },
+      include: { user: true },
     });
 
     if (!receiverRegistry) {
@@ -214,7 +215,7 @@ export class PaymentService {
       );
     }
 
-    return receiverRegistry.walletAddress;
+    return receiverRegistry.user.walletAddress;
   }
 
   private decodeQr(encodedQr: string) {

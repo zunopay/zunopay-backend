@@ -25,7 +25,7 @@ export class UserController {
   @RolesGuard([Role.KycVerifier])
   @Patch('/verify')
   async verify(@UserEntity() user: UserPayload, @Body() body: VerifyUserDto) {
-    await this.userService.verify(user, body);
+    await this.userService.verifyVpa(user, body);
   }
 
   @UserAuth()

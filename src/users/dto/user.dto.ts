@@ -1,9 +1,4 @@
-import {
-  Role,
-  SupportedRegion,
-  User,
-  UserKycVerification,
-} from '@prisma/client';
+import { Role, SupportedRegion, User } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { IsBoolean, IsEnum, IsNumber, IsString } from 'class-validator';
 
@@ -18,7 +13,7 @@ export class UserDto {
   email: string;
 
   @IsString()
-  avatar: string;
+  avatar?: string;
 
   @IsEnum(Role)
   role: Role;
@@ -33,7 +28,7 @@ export class UserDto {
   isKycVerified: boolean;
 }
 
-type UserInput = User & { verification?: UserKycVerification };
+type UserInput = User & { verification: boolean };
 
 export const toUserDto = (user: UserInput) => {
   const plainUserDto: UserDto = {
