@@ -25,7 +25,7 @@ model User {
   lastLogin        DateTime?
   lastActiveAt     DateTime?
   emailVerifiedAt  DateTime?
-  walletAddress    String?              @unique
+  walletAddress    String?               @unique
   registry         KeyWalletRegistry?
   offrampProviders UserOfframpProvider[]
   nonce            String                @default(uuid())
@@ -34,6 +34,8 @@ model User {
   verifier         KycVerifier?
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
+  transferSent     Transfer[]            @relation(name: "SenderUser")
+  transferReceived Transfer[]            @relation(name: "ReceiverUser")
 }
 
 model ReferralCode {
@@ -93,4 +95,25 @@ model UserOfframpProvider {
   kyc             Boolean         @default(false)
 
   @@unique([userId, offrampProvider])
+}
+
+enum TokenType {
+  USDC
+}
+
+enum TransferStatus {
+  Success
+  Pending
+  Rejected
+}
+
+model Transfer {
+  id         Int            @id @default(autoincrement())
+  senderId   Int
+  sender     User           @relation(name: "SenderUser", fields: [senderId], references: [id])
+  receiverId Int
+  receiver   User           @relation(name: "ReceiverUser", fields: [receiverId], references: [id])
+  amount     Int
+  tokenType  TokenType
+  status     TransferStatus
 }

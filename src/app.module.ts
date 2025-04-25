@@ -11,6 +11,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { SecurityConfig } from './config/config.interface';
 import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
+import { IndexerService } from './indexer/indexer.service';
+import { IndexerModule } from './indexer/indexer.module';
 
 @Module({
   imports: [
@@ -42,8 +44,9 @@ import { PrivyModule } from './third-party/privy/privy.module';
     AuthModule,
     PaymentModule,
     PrivyModule,
+    IndexerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, IndexerService],
 })
 export class AppModule {}
