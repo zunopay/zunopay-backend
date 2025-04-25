@@ -41,13 +41,13 @@ export class UserController {
   }
 
   @RolesGuard([Role.Admin])
-  @Patch('register/verifier/:username')
+  @Patch('/register/verifier/:username')
   async registerVerifier(@Param('username') username: string) {
     await this.userService.registerVerifier(username);
   }
 
   @UserAuth()
-  @Get('get/balance')
+  @Get('/get/balance')
   async getBalance(@UserEntity() user: UserPayload): Promise<string> {
     return await this.userService.getBalance(user.id);
   }

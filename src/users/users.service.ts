@@ -45,10 +45,9 @@ export class UsersService {
   async getBalance(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { registry: true },
     });
 
-    if (!user.registry) {
+    if (!user.walletAddress) {
       throw new BadRequestException(
         " User doesn't have any wallet registered ",
       );
