@@ -36,6 +36,7 @@ model User {
   referredBy       ReferralCode?         @relation("ReferredUser")
   transferSent     Transfer[]            @relation(name: "SenderUser")
   transferReceived Transfer[]            @relation(name: "ReceiverUser")
+  points           UserRewardPoints[]
 }
 
 model ReferralCode {
@@ -116,4 +117,25 @@ model Transfer {
   amount     Int
   tokenType  TokenType
   status     TransferStatus
+}
+
+enum RewardPointTask {
+  MerchantOnboarding
+  EarlyUser
+}
+
+model RewardPointSystem {
+  id     Int                @id @default(autoincrement())
+  task   RewardPointTask    @unique
+  points Int
+  users  UserRewardPoints[]
+}
+
+model UserRewardPoints {
+  id       Int               @id @default(autoincrement())
+  userId   Int
+  user     User              @relation(fields: [userId], references: [id])
+  rewardId Int
+  reward   RewardPointSystem @relation(fields: [rewardId], references: [id])
+  targetId  Int?
 }

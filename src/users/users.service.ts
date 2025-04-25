@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Role, User } from '@prisma/client';
+import { RewardPointTask, Role, User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
@@ -303,5 +303,27 @@ export class UsersService {
         },
       },
     });
+
+    await this.rewardUser(kycVerifier.id, RewardPointTask.MerchantOnboarding);
+  }
+
+  async rewardUser(userId: number, task: RewardPointTask) {
+    await this.prisma.userRewardPoints.create({
+      data: {
+        user: { connect: { id: userId } },
+        reward: { connect: { task } },
+      },
+    });
+  }
+
+  async calculateUserPoints(userId: number) {
+    const rewards = await this.prisma.userRewardPoints.findMany({
+      where: { userId },
+      select: { reward: { select: { points: true } } },
+    });
+    let totalPoints = 0;
+
+    rewards.forEach((data) => (totalPoints += data.reward.points));
+    return totalPoints;
   }
 }

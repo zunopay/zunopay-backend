@@ -4,6 +4,6 @@ import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   providers: [WebhookService],
-  imports: [WebhookModule]
+  imports: [WebhookModule],
 })
 export class IndexerModule {}

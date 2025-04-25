@@ -5,6 +5,3 @@ export class CreateWebhookDto extends PickType(WebhookDto, [
   'webhookURL',
   'accountAddresses',
 ]) {}
-
-
-

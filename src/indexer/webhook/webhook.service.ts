@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-    EnrichedTransaction,
+  EnrichedTransaction,
   Helius,
   HeliusCluster,
   TransactionType,
@@ -31,7 +31,7 @@ export class WebhookService {
         process.env.SOLANA_CLUSTER === 'devnet'
           ? WebhookType.ENHANCED_DEVNET
           : WebhookType.ENHANCED,
-        authHeader: this.generateJwtHeader(),
+      authHeader: this.generateJwtHeader(),
     });
   }
 
@@ -64,7 +64,7 @@ export class WebhookService {
   updateWebhook(id: string, payload: UpdateWebhookDto) {
     return this.client.editWebhook(id, {
       ...payload,
-        authHeader: this.generateJwtHeader(),
+      authHeader: this.generateJwtHeader(),
     });
   }
 
@@ -76,14 +76,16 @@ export class WebhookService {
     console.log(enrichedTransactions);
     return Promise.all(
       enrichedTransactions.map((transaction) => {
-        switch (transaction.type) {
-        //   case TransactionType.TRANSFER:
-        //     return this.handleLegacyCollectibleComicTransfer(
-        //       transaction.instructions.at(-1),
-        //       transaction.signature,
-        //     );
-        //   default:
-        //     return this.handleUnknownWebhookEvent(transaction);
+        switch (
+          transaction.type
+          //   case TransactionType.TRANSFER:
+          //     return this.handleLegacyCollectibleComicTransfer(
+          //       transaction.instructions.at(-1),
+          //       transaction.signature,
+          //     );
+          //   default:
+          //     return this.handleUnknownWebhookEvent(transaction);
+        ) {
         }
       }),
     );

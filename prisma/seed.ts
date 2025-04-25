@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, RewardPointTask } from '@prisma/client';
 import { ConfigService } from '@nestjs/config'
 import { usersToSeed } from './users';
 
@@ -20,6 +20,9 @@ async function main() {
   // SEED USERS
   await prisma.user.create({ data: await usersToSeed() });
   console.info('Added users');
+
+  // SEED REWARD SYSTEM
+  await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.MerchantOnboarding, points: 5 } })
 }
 
 main()
