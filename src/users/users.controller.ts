@@ -51,4 +51,10 @@ export class UserController {
   async getBalance(@UserEntity() user: UserPayload): Promise<string> {
     return await this.userService.getBalance(user.id);
   }
+
+  @UserAuth()
+  @Get('/get/reward-points')
+  async getRewardPoints(@UserEntity() user: UserPayload): Promise<number> {
+    return await this.userService.getUserPoints(user.id);
+  }
 }

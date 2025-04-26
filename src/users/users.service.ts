@@ -250,15 +250,6 @@ export class UsersService {
     });
   }
 
-  private async checkIfReferralCodeAvailable(refCode: string) {
-    const referralCode = await this.prisma.referralCode.findUnique({
-      where: { code: refCode },
-    });
-
-    const isAvailable = referralCode && !referralCode.refereeId;
-    return isAvailable;
-  }
-
   async verifyVpa(kycVerifier: UserPayload, body: VerifyUserDto) {
     const { vpa, username } = body;
 
@@ -316,7 +307,7 @@ export class UsersService {
     });
   }
 
-  async calculateUserPoints(userId: number) {
+  async getUserPoints(userId: number) {
     const rewards = await this.prisma.userRewardPoints.findMany({
       where: { userId },
       select: { reward: { select: { points: true } } },

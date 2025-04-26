@@ -16,7 +16,7 @@ export const UPI_VPA_PREFIX = 'upi://pay?';
 export const JWT_LABEL = 'JWT-user';
 
 // Instructions
-export const MIN_COMPUTE_PRICE = 600_000;
+export const MIN_COMPUTE_PRICE = 100_000;
 export const MIN_COMPUTE_PRICE_IX = ComputeBudgetProgram.setComputeUnitPrice({
   microLamports: MIN_COMPUTE_PRICE,
 });

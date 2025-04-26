@@ -23,6 +23,8 @@ async function main() {
 
   // SEED REWARD SYSTEM
   await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.MerchantOnboarding, points: 5 } })
+  await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.EarlyUser, points: 1 } })
+
 }
 
 main()
