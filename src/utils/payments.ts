@@ -6,6 +6,7 @@ import {
 import {
   ComputeBudgetProgram,
   Connection,
+  Keypair,
   PublicKey,
   Transaction,
 } from '@solana/web3.js';
@@ -27,6 +28,7 @@ export async function constructDigitalTransferTransaction(
   sender: string,
   receiver: string,
   amount: number,
+  reference: PublicKey,
 ) {
   const mint = new PublicKey(USDC_ADDRESS);
   const sourceOwner = new PublicKey(sender);
@@ -46,6 +48,14 @@ export async function constructDigitalTransferTransaction(
     sourceOwner,
     amount,
   );
+
+  /* Add reference key for polling the transaction confirmation */
+  transferInstruction.keys.push({
+    pubkey: reference,
+    isSigner: false,
+    isWritable: false,
+  });
+
   const computeBudgetInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: MIN_COMPUTE_PRICE,
   });

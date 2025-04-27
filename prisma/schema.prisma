@@ -109,14 +109,18 @@ enum TransferStatus {
 }
 
 model Transfer {
-  id         Int            @id @default(autoincrement())
-  senderId   Int
-  sender     User           @relation(name: "SenderUser", fields: [senderId], references: [id])
-  receiverId Int
-  receiver   User           @relation(name: "ReceiverUser", fields: [receiverId], references: [id])
-  amount     Int
-  tokenType  TokenType
-  status     TransferStatus
+  id                    Int            @id @default(autoincrement())
+  senderId             Int?
+  sender                User?           @relation(name: "SenderUser", fields: [senderId], references: [id])
+  receiverWalletAddress String
+  amount                Int
+  tokenType             TokenType
+  reference             String
+  status                TransferStatus
+  signature             String?
+  receiverId            Int?
+  createdAt             DateTime       @default(now())
+  receiver              User?          @relation(name: "ReceiverUser", fields: [receiverId], references: [id])
 }
 
 enum RewardPointTask {
@@ -137,5 +141,5 @@ model UserRewardPoints {
   user     User              @relation(fields: [userId], references: [id])
   rewardId Int
   reward   RewardPointSystem @relation(fields: [rewardId], references: [id])
-  targetId  Int?
+  targetId Int?
 }

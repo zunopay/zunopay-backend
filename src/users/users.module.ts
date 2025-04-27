@@ -6,6 +6,7 @@ import { UserController } from './users.controller';
 import { PaymentService } from '../payment/payment.service';
 import { SphereService } from '../third-party/sphere/sphere.service';
 import { PrivyService } from '../third-party/privy/privy.service';
+import { WebhookService } from '../indexer/webhook/webhook.service';
 
 @Module({
   controllers: [UserController],
@@ -16,6 +17,7 @@ import { PrivyService } from '../third-party/privy/privy.service';
     PaymentService,
     SphereService,
     PrivyService,
+    WebhookService,
   ],
   exports: [UsersService],
 })

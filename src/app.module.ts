@@ -13,6 +13,7 @@ import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
 import { IndexerService } from './indexer/indexer.service';
 import { IndexerModule } from './indexer/indexer.module';
+import { WebhookModule } from './indexer/webhook/webhook.module';
 
 @Module({
   imports: [
@@ -45,8 +46,9 @@ import { IndexerModule } from './indexer/indexer.module';
     PaymentModule,
     PrivyModule,
     IndexerModule,
+    WebhookModule,
   ],
   controllers: [AppController],
-  providers: [AppService, IndexerService],
+  providers: [AppService],
 })
 export class AppModule {}

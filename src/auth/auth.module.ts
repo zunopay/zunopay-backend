@@ -10,6 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { PaymentService } from '../payment/payment.service';
 import { SphereService } from '../third-party/sphere/sphere.service';
+import { WebhookService } from '../indexer/webhook/webhook.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SphereService } from '../third-party/sphere/sphere.service';
     PrivyService,
     PaymentService,
     SphereService,
+    WebhookService,
   ],
 })
 export class AuthModule {}

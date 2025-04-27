@@ -16,6 +16,7 @@ import {
 import { TransferParams } from './dto/transfer-params.dto';
 import {
   Connection,
+  Keypair,
   PublicKey,
   TransactionMessage,
   VersionedTransaction,
@@ -43,7 +44,12 @@ import {
   TokenInvalidMintError,
   TokenInvalidOwnerError,
 } from '@solana/spl-token';
-import { Currency } from 'src/types/payment';
+import { Currency } from '../types/payment';
+import { TokenType, TransferStatus } from '@prisma/client';
+import { WebhookService } from '../indexer/webhook/webhook.service';
+import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
+import { encodeURL } from '@solana/pay';
+import BigNumber from 'bignumber.js';
 
 /*
   TODO: 
@@ -61,6 +67,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sphereService: SphereService,
+    private readonly webhookService: WebhookService,
   ) {
     this.connection = getConnection();
   }
@@ -80,25 +87,95 @@ export class PaymentService {
     };
   }
 
-  async transferDigital(query: TransferParams, userId: number) {
-    const { vpa, amount } = query;
+  /**
+   *
+   * 1. Add reference public key for checking the tx on blockchain
+   * 2. Generate amount encoded Solana Pay qr and Upi/pix/iban qr
+   *
+   */
 
-    const sender = await this.prisma.user.findUnique({
+  async transferDigital(query: TransferParams, userId: number) {
+    try {
+      const { vpa, amount } = query;
+
+      const sender = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      const receiverWalletAddress = await this.resolveWalletAddress(vpa);
+
+      // Construct transaction
+      const reference = Keypair.generate().publicKey;
+      const senderWalletAddress = sender.walletAddress;
+      const transaction = await constructDigitalTransferTransaction(
+        this.connection,
+        senderWalletAddress,
+        receiverWalletAddress,
+        amount,
+        reference,
+      );
+
+      const receiverUser = await this.prisma.user.findUnique({
+        where: { walletAddress: receiverWalletAddress },
+      });
+
+      let receiver = undefined;
+      if (receiverUser) {
+        receiver = { receiver: { connect: { id: receiverUser.id } } };
+      }
+
+      await this.prisma.transfer.create({
+        data: {
+          sender: { connect: { id: userId } },
+          receiver,
+          amount,
+          receiverWalletAddress,
+          reference: reference.toString(),
+          tokenType: TokenType.USDC,
+          status: TransferStatus.Pending,
+        },
+      });
+      await this.webhookService.subscribeTo(reference.toString());
+
+      return transaction;
+    } catch (e) {
+      throw new InternalServerErrorException(
+        'Failed to initiate transfer request',
+      );
+    }
+  }
+
+  async createReceiveRequest(userId: number, query: ReceivePaymentParamsDto) {
+    const receiver = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
-    const receiverWalletAddress = await this.resolveWalletAddress(vpa);
-
     // Construct transaction
-    const senderWalletAddress = sender.walletAddress;
-    const transaction = await constructDigitalTransferTransaction(
-      this.connection,
-      senderWalletAddress,
-      receiverWalletAddress,
-      amount,
-    );
+    const reference = Keypair.generate().publicKey;
+    const receiverWalletAddress = new PublicKey(receiver.walletAddress);
+    const splToken = new PublicKey(USDC_ADDRESS);
+    const amount = new BigNumber(query.amount);
 
-    return transaction;
+    await this.prisma.transfer.create({
+      data: {
+        receiverWalletAddress: receiver.walletAddress,
+        receiver: { connect: { id: receiver.id } },
+        amount: query.amount,
+        status: TransferStatus.Pending,
+        tokenType: TokenType.USDC,
+        reference: reference.toString(),
+      },
+    });
+
+    const paymentUrl = encodeURL({
+      recipient: receiverWalletAddress,
+      amount,
+      splToken,
+      reference,
+      message: query.message,
+    });
+
+    return paymentUrl;
   }
 
   async getWalletBalance(walletAddress: string) {

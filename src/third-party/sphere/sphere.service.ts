@@ -46,14 +46,13 @@ export class SphereService {
         If mannual:
         - Transfer with transaction wallet signing
       */
-
-      const transferTransaction = await constructDigitalTransferTransaction(
-        this.connection,
-        sphereCustomer.walletAccountId,
-        intermediaryWallet.address,
-        amount,
-      );
-      return transferTransaction;
+      // const transferTransaction = await constructDigitalTransferTransaction(
+      //   this.connection,
+      //   sphereCustomer.walletAccountId,
+      //   intermediaryWallet.address,
+      //   amount,
+      // );
+      // return transferTransaction;
     } else {
       //fails
       throw new BadRequestException('Failed to offramp');

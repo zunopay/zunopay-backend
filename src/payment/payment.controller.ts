@@ -7,6 +7,7 @@ import { TransferParams } from './dto/transfer-params.dto';
 import { UserEntity } from 'src/decorators/user.decorator';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserAuth } from 'src/guards/user-auth';
+import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
 
 @ApiTags('Payment')
 @Controller('payment')
@@ -29,6 +30,19 @@ export class PaymentController {
     const transferTransaction = await this.paymentService.transferDigital(
       query,
       user.id,
+    );
+    return transferTransaction;
+  }
+
+  @UserAuth()
+  @Get('get/receive-request')
+  async getPaymentReceiveRequest(
+    @Query() query: ReceivePaymentParamsDto,
+    @UserEntity() user: UserPayload,
+  ) {
+    const transferTransaction = await this.paymentService.createReceiveRequest(
+      user.id,
+      query,
     );
     return transferTransaction;
   }
