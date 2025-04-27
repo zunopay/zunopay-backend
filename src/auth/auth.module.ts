@@ -11,6 +11,7 @@ import { PrivyService } from '../third-party/privy/privy.service';
 import { PaymentService } from '../payment/payment.service';
 import { SphereService } from '../third-party/sphere/sphere.service';
 import { WebhookService } from '../indexer/webhook/webhook.service';
+import { IndexerService } from '../indexer/indexer.service';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { WebhookService } from '../indexer/webhook/webhook.service';
     PaymentService,
     SphereService,
     WebhookService,
+    IndexerService,
   ],
 })
 export class AuthModule {}

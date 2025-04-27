@@ -50,6 +50,7 @@ import { WebhookService } from '../indexer/webhook/webhook.service';
 import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
 import { encodeURL } from '@solana/pay';
 import BigNumber from 'bignumber.js';
+import { IndexerService } from '../indexer/indexer.service';
 
 /*
   TODO: 
@@ -67,7 +68,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sphereService: SphereService,
-    private readonly webhookService: WebhookService,
+    private readonly indexerService: IndexerService,
   ) {
     this.connection = getConnection();
   }
@@ -135,7 +136,6 @@ export class PaymentService {
           status: TransferStatus.Pending,
         },
       });
-      await this.webhookService.subscribeTo(reference.toString());
 
       return transaction;
     } catch (e) {
@@ -156,7 +156,7 @@ export class PaymentService {
     const splToken = new PublicKey(USDC_ADDRESS);
     const amount = new BigNumber(query.amount);
 
-    await this.prisma.transfer.create({
+    const transfer = await this.prisma.transfer.create({
       data: {
         receiverWalletAddress: receiver.walletAddress,
         receiver: { connect: { id: receiver.id } },
@@ -175,6 +175,7 @@ export class PaymentService {
       message: query.message,
     });
 
+    this.indexerService.pollPayment(transfer);
     return paymentUrl;
   }
 
