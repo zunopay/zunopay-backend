@@ -197,6 +197,15 @@ export class PaymentService {
     }
   }
 
+  async getTransactionHistory(userId: number) {
+    const transactions = await this.prisma.transfer.findMany({
+      where: {
+        OR: [{ senderWallet: { userId } }, { receiverWallet: { userId } }],
+      },
+    });
+    return transactions;
+  }
+
   private async getOrCreateTokenAccount(
     tokenAddress: PublicKey,
     owner: PublicKey,

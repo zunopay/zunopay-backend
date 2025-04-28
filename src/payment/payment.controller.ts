@@ -46,4 +46,13 @@ export class PaymentController {
     );
     return transferTransaction;
   }
+
+  @UserAuth()
+  @Get('get/transaction-history')
+  async getTransactionHistory(@UserEntity() user: UserPayload) {
+    const transferTransaction = await this.paymentService.getTransactionHistory(
+      user.id,
+    );
+    return transferTransaction;
+  }
 }
