@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { WebhookService } from './webhook/webhook.service';
 import { Transfer, TransferStatus } from '@prisma/client';
-import { ConfirmedSignatureInfo, Connection, PublicKey } from '@solana/web3.js';
+import {
+  ConfirmedSignatureInfo,
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionResponse,
+} from '@solana/web3.js';
 import {
   findReference,
   FindReferenceError,
@@ -12,6 +18,11 @@ import { USDC_ADDRESS } from '../constants';
 import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../utils/connection';
 import * as BigNumber from 'bignumber.js';
+import {
+  decodeInstruction,
+  isTransferCheckedInstruction,
+  isTransferInstruction,
+} from '@solana/spl-token';
 
 @Injectable()
 export class IndexerService {
@@ -28,6 +39,7 @@ export class IndexerService {
     const recipient = new PublicKey(transfer.receiverWalletAddress);
     const amount = new BigNumber(transfer.amount);
     const splToken = new PublicKey(USDC_ADDRESS);
+    let senderWalletAddress: string;
 
     const TEN_MINUTES = 60 * 1000;
     const POLL_INTERVAL = 1000;
@@ -88,26 +100,36 @@ export class IndexerService {
       );
 
       // After finding the transaction, validate it
-      await validateTransfer(
+      const transactionResponse = await validateTransfer(
         this.connection,
         signature,
         { recipient, amount, splToken, reference },
         { commitment: 'confirmed' },
       );
+      const transaction = Transaction.populate(
+        transactionResponse.transaction.message,
+        transactionResponse.transaction.signatures,
+      );
+
+      senderWalletAddress =
+        this.getSenderWalletAddressFromTransactionResponse(transaction);
 
       await this.sendTransferResponseEvent(
         transfer.id,
         transfer.reference,
         TransferStatus.Success,
+        senderWalletAddress,
       );
     } catch (error) {
       console.error('Polling or validation failed', error);
 
       if (error instanceof ValidateTransferError) {
-        await this.prisma.transfer.update({
-          where: { id: transfer.id },
-          data: { status: TransferStatus.Rejected },
-        });
+        await this.sendTransferResponseEvent(
+          transfer.id,
+          reference.toString(),
+          TransferStatus.Rejected,
+          senderWalletAddress,
+        );
       }
     } finally {
       if (interval) {
@@ -116,14 +138,46 @@ export class IndexerService {
     }
   }
 
+  private getSenderWalletAddressFromTransactionResponse(
+    transaction: Transaction,
+  ) {
+    const instruction = transaction.instructions.at(-1);
+    if (!instruction) return;
+
+    const decodedInstruction = decodeInstruction(instruction);
+    if (
+      !isTransferCheckedInstruction(decodedInstruction) &&
+      !isTransferInstruction(decodedInstruction)
+    )
+      return;
+
+    const senderWalletAddress =
+      decodedInstruction.keys.source.pubkey.toString();
+    return senderWalletAddress;
+  }
+
   private async sendTransferResponseEvent(
     transferId: number,
     reference: string,
     status: TransferStatus,
+    senderWalletAddress?: string,
   ) {
     await this.prisma.transfer.update({
       where: { id: transferId },
-      data: { status },
+      data: {
+        status,
+        ...(senderWalletAddress && {
+          senderWallet: {
+            connectOrCreate: {
+              where: { address: senderWalletAddress },
+              create: {
+                address: senderWalletAddress,
+                lastInteractedAt: new Date(),
+              },
+            },
+          },
+        }),
+      },
     });
 
     // TODO: Send websocket event to receiver.

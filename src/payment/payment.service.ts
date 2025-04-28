@@ -78,13 +78,13 @@ export class PaymentService {
     const commitment = generateCommitment(receiver.vpa);
     const registry = await this.prisma.keyWalletRegistry.findFirst({
       where: { commitment, verification: { isNot: null } },
-      include: { user: true },
+      include: { user: { select: { wallet: { select: { address: true } } } } },
     });
 
     return {
       ...receiver,
       vpa: receiver.vpa,
-      walletAddress: registry.user.walletAddress,
+      walletAddress: registry.user.wallet.address,
     };
   }
 
@@ -95,19 +95,20 @@ export class PaymentService {
    *
    */
 
-  async transferDigital(query: TransferParams, userId: number) {
+  async createTransferRequest(query: TransferParams, userId: number) {
     try {
       const { vpa, amount } = query;
 
       const sender = await this.prisma.user.findUnique({
         where: { id: userId },
+        select: { wallet: { select: { address: true } } },
       });
 
       const receiverWalletAddress = await this.resolveWalletAddress(vpa);
 
       // Construct transaction
       const reference = Keypair.generate().publicKey;
-      const senderWalletAddress = sender.walletAddress;
+      const senderWalletAddress = sender.wallet.address;
       const transaction = await constructDigitalTransferTransaction(
         this.connection,
         senderWalletAddress,
@@ -116,21 +117,29 @@ export class PaymentService {
         reference,
       );
 
-      const receiverUser = await this.prisma.user.findUnique({
-        where: { walletAddress: receiverWalletAddress },
+      const receiverWallet = await this.prisma.wallet.findUnique({
+        where: { address: receiverWalletAddress },
+        select: { userId: true },
       });
 
       let receiver = undefined;
-      if (receiverUser) {
-        receiver = { receiver: { connect: { id: receiverUser.id } } };
+      if (receiverWallet && receiverWallet.userId) {
+        receiver = { receiver: { connect: { id: receiverWallet.userId } } };
       }
 
       await this.prisma.transfer.create({
         data: {
-          sender: { connect: { id: userId } },
-          receiver,
+          senderWallet: { connect: { address: senderWalletAddress } },
+          receiverWallet: {
+            connectOrCreate: {
+              where: { address: receiverWalletAddress },
+              create: {
+                address: receiverWalletAddress,
+                lastInteractedAt: new Date(),
+              },
+            },
+          },
           amount,
-          receiverWalletAddress,
           reference: reference.toString(),
           tokenType: TokenType.USDC,
           status: TransferStatus.Pending,
@@ -148,18 +157,18 @@ export class PaymentService {
   async createReceiveRequest(userId: number, query: ReceivePaymentParamsDto) {
     const receiver = await this.prisma.user.findUnique({
       where: { id: userId },
+      include: { wallet: { select: { address: true } } },
     });
 
     // Construct transaction
     const reference = Keypair.generate().publicKey;
-    const receiverWalletAddress = new PublicKey(receiver.walletAddress);
+    const receiverWalletAddress = new PublicKey(receiver.wallet.address);
     const splToken = new PublicKey(USDC_ADDRESS);
     const amount = new BigNumber(query.amount);
 
     const transfer = await this.prisma.transfer.create({
       data: {
-        receiverWalletAddress: receiver.walletAddress,
-        receiver: { connect: { id: receiver.id } },
+        receiverWallet: { connect: { address: receiver.wallet.address } },
         amount: query.amount,
         status: TransferStatus.Pending,
         tokenType: TokenType.USDC,
@@ -284,16 +293,16 @@ export class PaymentService {
     const commitment = generateCommitment(vpa);
     const receiverRegistry = await this.prisma.keyWalletRegistry.findFirst({
       where: { commitment, verification: { isNot: null } },
-      include: { user: true },
+      select: { user: { select: { wallet: { select: { address: true } } } } },
     });
 
-    if (!receiverRegistry) {
+    if (!receiverRegistry || !receiverRegistry.user.wallet?.address) {
       throw new BadRequestException(
         " Receiver either haven't got verified or registered. Get them register to earn rewards ",
       );
     }
 
-    return receiverRegistry.user.walletAddress;
+    return receiverRegistry.user.wallet.address;
   }
 
   private decodeQr(encodedQr: string) {

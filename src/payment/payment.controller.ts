@@ -27,7 +27,7 @@ export class PaymentController {
     @Query() query: TransferParams,
     @UserEntity() user: UserPayload,
   ) {
-    const transferTransaction = await this.paymentService.transferDigital(
+    const transferTransaction = await this.paymentService.createTransferRequest(
       query,
       user.id,
     );

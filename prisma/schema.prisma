@@ -25,7 +25,7 @@ model User {
   lastLogin        DateTime?
   lastActiveAt     DateTime?
   emailVerifiedAt  DateTime?
-  walletAddress    String?               @unique
+  wallet           Wallet?
   registry         KeyWalletRegistry?
   offrampProviders UserOfframpProvider[]
   nonce            String                @default(uuid())
@@ -34,9 +34,16 @@ model User {
   verifier         KycVerifier?
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
-  transferSent     Transfer[]            @relation(name: "SenderUser")
-  transferReceived Transfer[]            @relation(name: "ReceiverUser")
   points           UserRewardPoints[]
+}
+
+model Wallet {
+  address          String     @id
+  userId           Int?       @unique
+  user             User?      @relation(fields: [userId], references: [id])
+  lastInteractedAt DateTime
+  transferSent     Transfer[] @relation(name: "SenderWallet")
+  transferReceived Transfer[] @relation(name: "ReceiverWallet")
 }
 
 model ReferralCode {
@@ -110,17 +117,16 @@ enum TransferStatus {
 
 model Transfer {
   id                    Int            @id @default(autoincrement())
-  senderId             Int?
-  sender                User?           @relation(name: "SenderUser", fields: [senderId], references: [id])
-  receiverWalletAddress String
+  senderWalletAddress   String?
+  senderWallet          Wallet?         @relation(name: "SenderWallet", fields: [senderWalletAddress], references: [address])
   amount                Int
   tokenType             TokenType
   reference             String
   status                TransferStatus
   signature             String?
-  receiverId            Int?
   createdAt             DateTime       @default(now())
-  receiver              User?          @relation(name: "ReceiverUser", fields: [receiverId], references: [id])
+  receiverWalletAddress String
+  receiverWallet        Wallet         @relation(name: "ReceiverWallet", fields: [receiverWalletAddress], references: [address])
 }
 
 enum RewardPointTask {

@@ -45,16 +45,17 @@ export class UsersService {
   async getBalance(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      select: { wallet: { select: { address: true } } },
     });
 
-    if (!user.walletAddress) {
+    if (!user.wallet) {
       throw new BadRequestException(
         " User doesn't have any wallet registered ",
       );
     }
 
     const balance = await this.paymentService.getWalletBalance(
-      user.walletAddress,
+      user.wallet.address,
     );
     return balance;
   }
@@ -222,7 +223,12 @@ export class UsersService {
       where: { id: userId },
       data: {
         emailVerifiedAt: new Date(),
-        walletAddress,
+        wallet: {
+          connectOrCreate: {
+            where: { address: walletAddress },
+            create: { address: walletAddress, lastInteractedAt: new Date() },
+          },
+        },
       },
     });
   }
