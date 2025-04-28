@@ -117,17 +117,7 @@ export class PaymentService {
         reference,
       );
 
-      const receiverWallet = await this.prisma.wallet.findUnique({
-        where: { address: receiverWalletAddress },
-        select: { userId: true },
-      });
-
-      let receiver = undefined;
-      if (receiverWallet && receiverWallet.userId) {
-        receiver = { receiver: { connect: { id: receiverWallet.userId } } };
-      }
-
-      await this.prisma.transfer.create({
+      const transfer = await this.prisma.transfer.create({
         data: {
           senderWallet: { connect: { address: senderWalletAddress } },
           receiverWallet: {
@@ -145,6 +135,7 @@ export class PaymentService {
           status: TransferStatus.Pending,
         },
       });
+      this.indexerService.pollPayment(transfer);
 
       return transaction;
     } catch (e) {

@@ -14,7 +14,7 @@ import {
   validateTransfer,
   ValidateTransferError,
 } from '@solana/pay';
-import { USDC_ADDRESS } from '../constants';
+import { USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../utils/connection';
 import * as BigNumber from 'bignumber.js';
@@ -37,7 +37,7 @@ export class IndexerService {
   async pollPayment(transfer: Transfer) {
     const reference = new PublicKey(transfer.reference);
     const recipient = new PublicKey(transfer.receiverWalletAddress);
-    const amount = new BigNumber(transfer.amount);
+    const amount = new BigNumber(transfer.amount / Math.pow(10, USDC_DECIMALS));
     const splToken = new PublicKey(USDC_ADDRESS);
     let senderWalletAddress: string;
 
