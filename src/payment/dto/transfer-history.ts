@@ -1,8 +1,8 @@
-import { Transfer, TransferStatus } from '@prisma/client';
+import { TokenType, Transfer, TransferStatus } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { IsDate, IsEnum, IsNumber, IsString } from 'class-validator';
 
-export enum TransactionType {
+export enum TransferType {
   Sent = 'Sent',
   Received = 'Received',
 }
@@ -22,15 +22,25 @@ export class TransferHistoryDto {
 
   @IsDate()
   createdAt: Date;
+
+  @IsEnum(TokenType)
+  tokenType: TokenType;
+
+  @IsEnum(TransferType)
+  type: TransferType;
 }
 
-export function toTransferHistory(input: Transfer) {
+export type TransferHistoryInput = Transfer & { type: TransferType };
+
+export function toTransferHistory(input: TransferHistoryInput) {
   const plainTransferHistoryDto: TransferHistoryDto = {
     id: input.id,
     amount: input.amount,
     status: input.status,
     signature: input.signature,
     createdAt: input.createdAt,
+    tokenType: input.tokenType,
+    type: input.type,
   };
 
   const transferHistoryDto: TransferHistoryDto = plainToInstance(
@@ -40,6 +50,6 @@ export function toTransferHistory(input: Transfer) {
   return transferHistoryDto;
 }
 
-export function toTransferHistoryArray(inputs: Transfer[]) {
+export function toTransferHistoryArray(inputs: TransferHistoryInput[]) {
   return inputs.map(toTransferHistory);
 }

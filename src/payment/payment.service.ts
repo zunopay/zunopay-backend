@@ -51,6 +51,7 @@ import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
 import { encodeURL } from '@solana/pay';
 import BigNumber from 'bignumber.js';
 import { IndexerService } from '../indexer/indexer.service';
+import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
   TODO: 
@@ -197,13 +198,28 @@ export class PaymentService {
     }
   }
 
-  async getTransactionHistory(userId: number) {
-    const transactions = await this.prisma.transfer.findMany({
+  async getTransferHistory(userId: number): Promise<TransferHistoryInput[]> {
+    const userWallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+    });
+
+    const transfers = await this.prisma.transfer.findMany({
       where: {
         OR: [{ senderWallet: { userId } }, { receiverWallet: { userId } }],
       },
     });
-    return transactions;
+
+    const transferHistory: TransferHistoryInput[] = transfers.map(
+      (transfer) => ({
+        ...transfer,
+        type:
+          transfer.senderWalletAddress == userWallet.address
+            ? TransferType.Sent
+            : TransferType.Received,
+      }),
+    );
+
+    return transferHistory;
   }
 
   private async getOrCreateTokenAccount(
