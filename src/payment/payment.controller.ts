@@ -8,6 +8,7 @@ import { UserEntity } from 'src/decorators/user.decorator';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserAuth } from 'src/guards/user-auth';
 import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
+import { toTransferHistoryArray } from './dto/transaction-history.dto';
 
 @ApiTags('Payment')
 @Controller('payment')
@@ -53,6 +54,7 @@ export class PaymentController {
     const transferTransaction = await this.paymentService.getTransactionHistory(
       user.id,
     );
-    return transferTransaction;
+
+    return toTransferHistoryArray(transferTransaction);
   }
 }
