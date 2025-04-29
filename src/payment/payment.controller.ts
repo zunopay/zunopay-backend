@@ -45,7 +45,7 @@ export class PaymentController {
       user.id,
       query,
     );
-    return transferTransaction;
+    return transferTransaction.toString();
   }
 
   @UserAuth()

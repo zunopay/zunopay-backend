@@ -20,6 +20,9 @@ export class TransferHistoryDto {
   @IsString()
   signature: string;
 
+  @IsString()
+  walletAddress: string;
+
   @IsDate()
   createdAt: Date;
 
@@ -41,6 +44,10 @@ export function toTransferHistory(input: TransferHistoryInput) {
     createdAt: input.createdAt,
     tokenType: input.tokenType,
     type: input.type,
+    walletAddress:
+      input.type == TransferType.Sent
+        ? input.receiverWalletAddress
+        : input.senderWalletAddress,
   };
 
   const transferHistoryDto: TransferHistoryDto = plainToInstance(

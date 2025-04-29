@@ -41,7 +41,7 @@ export class IndexerService {
     const splToken = new PublicKey(USDC_ADDRESS);
     let senderWalletAddress: string;
 
-    const TEN_MINUTES = 60 * 1000;
+    const TEN_MINUTES = 10 * 60 * 1000;
     const POLL_INTERVAL = 1000;
 
     const start = Date.now();
