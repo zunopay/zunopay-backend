@@ -3,24 +3,38 @@ import {
   EnrichedTransaction,
   Helius,
   HeliusCluster,
+  Instruction,
   TransactionType,
   WebhookType,
 } from 'helius-sdk';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
 import { UpdateWebhookDto } from './dto/update-webhook.dto';
 import * as jwt from 'jsonwebtoken';
+import {
+  getAccount,
+  TOKEN_PROGRAM_ID,
+  transferInstructionData,
+} from '@solana/spl-token';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { PrismaService } from 'nestjs-prisma';
+import { getConnection } from '../../utils/connection';
+import { Public } from '@prisma/client/runtime/library';
+import bs58 from 'bs58';
+import { TokenType, TransferStatus } from '@prisma/client';
 
 @Injectable()
 export class WebhookService {
   private readonly client: Helius;
   private readonly webhookID: string;
+  private readonly connection: Connection;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     this.client = new Helius(
       process.env.HELIUS_API_KEY,
       process.env.SOLANA_CLUSTER as HeliusCluster,
     );
     this.webhookID = process.env.WEBHOOK_ID;
+    this.connection = getConnection();
   }
 
   createWebhook(payload: CreateWebhookDto) {
@@ -76,19 +90,77 @@ export class WebhookService {
     console.log(enrichedTransactions);
     return Promise.all(
       enrichedTransactions.map((transaction) => {
-        switch (
-          transaction.type
-          //   case TransactionType.TRANSFER:
-          //     return this.handleLegacyCollectibleComicTransfer(
-          //       transaction.instructions.at(-1),
-          //       transaction.signature,
-          //     );
-          //   default:
-          //     return this.handleUnknownWebhookEvent(transaction);
-        ) {
+        switch (transaction.type) {
+          case TransactionType.TRANSFER:
+            return this.handleTransfer(
+              transaction.instructions.at(-1),
+              transaction.signature,
+            );
+          case TransactionType.UNKNOWN:
+            return this.handleTransfer(
+              transaction.instructions.at(-1),
+              transaction.signature,
+            );
         }
       }),
     );
+  }
+
+  async handleTransfer(instruction: Instruction, signature: string) {
+    if (instruction.programId != TOKEN_PROGRAM_ID.toString()) {
+      return;
+    }
+
+    const authority = instruction.accounts.at(2);
+    const destinationAta = instruction.accounts.at(1);
+    const account = await getAccount(
+      this.connection,
+      new PublicKey(destinationAta),
+    );
+
+    const data = bs58.decode(instruction.data);
+    const transferData = transferInstructionData.decode(data);
+    const receiver = account.owner.toString();
+
+    await this.prisma.transfer.upsert({
+      where: { signature },
+      create: {
+        senderWallet: {
+          connectOrCreate: {
+            where: { address: authority },
+            create: { address: authority, lastInteractedAt: new Date() },
+          },
+        },
+        receiverWallet: {
+          connectOrCreate: {
+            where: { address: receiver },
+            create: { address: receiver, lastInteractedAt: new Date() },
+          },
+        },
+        status: TransferStatus.Success,
+        signature,
+        amount: Number(transferData.amount),
+        tokenType: TokenType.USDC, // TODO: Change this if support more currency,
+      },
+      update: {
+        senderWallet: {
+          connectOrCreate: {
+            where: { address: authority },
+            create: { address: authority, lastInteractedAt: new Date() },
+          },
+        },
+        receiverWallet: {
+          connectOrCreate: {
+            where: { address: receiver },
+            create: { address: receiver, lastInteractedAt: new Date() },
+          },
+        },
+        status: TransferStatus.Success,
+        signature,
+        amount: Number(transferData.amount),
+        tokenType: TokenType.USDC, // TODO: Change this if support more currency, },
+      },
+    });
   }
 
   private generateJwtHeader() {

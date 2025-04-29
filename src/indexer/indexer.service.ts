@@ -151,8 +151,7 @@ export class IndexerService {
     )
       return;
 
-    const senderWalletAddress =
-      decodedInstruction.keys.source.pubkey.toString();
+    const senderWalletAddress = decodedInstruction.keys.owner.pubkey.toString();
     return senderWalletAddress;
   }
 

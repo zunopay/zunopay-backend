@@ -118,12 +118,12 @@ enum TransferStatus {
 model Transfer {
   id                    Int            @id @default(autoincrement())
   senderWalletAddress   String?
-  senderWallet          Wallet?         @relation(name: "SenderWallet", fields: [senderWalletAddress], references: [address])
+  senderWallet          Wallet?        @relation(name: "SenderWallet", fields: [senderWalletAddress], references: [address])
   amount                Int
   tokenType             TokenType
-  reference             String
+  reference             String?
   status                TransferStatus
-  signature             String?
+  signature             String?        @unique
   createdAt             DateTime       @default(now())
   receiverWalletAddress String
   receiverWallet        Wallet         @relation(name: "ReceiverWallet", fields: [receiverWalletAddress], references: [address])
