@@ -17,6 +17,8 @@ import * as bcrypt from 'bcrypt';
 import { PaymentService } from '../payment/payment.service';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { PrivyService } from '../third-party/privy/privy.service';
+import { WalletBalanceInput } from './dto/wallet-balance.dto';
+import { RegionToCurrency } from 'src/utils/payments';
 
 @Injectable()
 export class UsersService {
@@ -42,10 +44,10 @@ export class UsersService {
     private readonly privyService: PrivyService,
   ) {}
 
-  async getBalance(userId: number) {
+  async getBalance(userId: number) : Promise<WalletBalanceInput> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { wallet: { select: { address: true } } },
+      select: { wallet: { select: { address: true } }, region: true },
     });
 
     if (!user.wallet) {
@@ -57,7 +59,9 @@ export class UsersService {
     const balance = await this.paymentService.getWalletBalance(
       user.wallet.address,
     );
-    return balance;
+
+    // TODO: Convert usdc balance to correct currency 
+    return {balance, currency: RegionToCurrency[user.region] };
   }
 
   async findOneById(id: number) {
@@ -324,3 +328,11 @@ export class UsersService {
     return totalPoints;
   }
 }
+
+/**
+ * 1. Return currency in local value as per region
+ * 2. Generate the QR as per region
+ * 3. 
+ * 
+ * 
+ */

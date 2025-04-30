@@ -13,6 +13,7 @@ import {
 import { MIN_COMPUTE_PRICE, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { Currency } from '../types/payment';
 import { getIdentitySignature, getTreasuryPublicKey } from './connection';
+import { SupportedRegion } from '@prisma/client';
 
 export function getCurrencyValue(key: string): Currency {
   const currency = key.replace(/\d+$/, '');
@@ -93,4 +94,11 @@ export function isSolanaAddress(value: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+export const RegionToCurrency = {
+  [SupportedRegion.IN] : Currency.INR,
+  [SupportedRegion.EU] : Currency.EUR,
+  [SupportedRegion.BR] : Currency.USD,
+  [SupportedRegion.SG] : Currency.USD
 }

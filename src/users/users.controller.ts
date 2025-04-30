@@ -9,6 +9,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { StartKycDto } from './dto/start-kyc.dto';
+import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
 
 @Controller('user')
 @ApiTags('User')
@@ -48,8 +49,9 @@ export class UserController {
 
   @UserAuth()
   @Get('/get/balance')
-  async getBalance(@UserEntity() user: UserPayload): Promise<string> {
-    return await this.userService.getBalance(user.id);
+  async getBalance(@UserEntity() user: UserPayload): Promise<WalletBalanceDto> {
+    const balance = await this.userService.getBalance(user.id);
+    return toWalletBalanceDto(balance);
   }
 
   @UserAuth()
