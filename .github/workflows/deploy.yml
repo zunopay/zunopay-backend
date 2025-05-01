@@ -57,21 +57,33 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{secrets.EC2_HOST}}
-          username: ${{secrets.EC2_USERNAME}}
-          key: ${{secrets.EC2_SECRET_KEY}}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SECRET_KEY }}
           script: |
-            docker stop ${{env.REPOSITORY}} || true
-            docker rm ${{env.REPOSITORY}} || true
-            docker pull ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:latest
+            set -e
+            echo "Starting deployment..."
+            echo "Organization: ${{ env.ORG_NAME }}"
+            echo "Repository: ${{ env.REPOSITORY }}"
+      
+            echo "Stopping any running container with name ${{ env.REPOSITORY }}..."
+            docker stop ${{ env.REPOSITORY }} || true
+      
+            echo "Removing any stopped container with name ${{ env.REPOSITORY }}..."
+            docker rm ${{ env.REPOSITORY }} || true
+      
+            echo "Pulling the latest Docker image from GitHub CR..."
+            docker pull ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
+      
+            echo "Running Docker container..."
             docker run -d \
-              --env DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              --env JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }} \
-              --env JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }} \
-              --env PRIVY_APP_ID=${{ secrets.PRIVY_APP_ID }} \
-              --env PRIVY_APP_SECRET=${{ secrets.PRIVY_APP_SECRET }} \
-              --env HELIUS_API_KEY=${{ secrets.HELIUS_API_KEY }} \
-              --env SOLANA_CLUSTER=${{ secrets.SOLANA_CLUSTER }} \
-              --env TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }} \
-              --env TREASURY_SECRET=${{ secrets.TREASURY_SECRET }} \
-              --name ${{env.REPOSITORY}} -p 80:3005 ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:latest
+              --env "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+              --env "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" \
+              --env "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" \
+              --env "PRIVY_APP_ID=${{ secrets.PRIVY_APP_ID }}" \
+              --env "PRIVY_APP_SECRET=${{ secrets.PRIVY_APP_SECRET }}" \
+              --env "HELIUS_API_KEY=${{ secrets.HELIUS_API_KEY }}" \
+              --env "SOLANA_CLUSTER=${{ secrets.SOLANA_CLUSTER }}" \
+              --env "TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }}" \
+              --env "TREASURY_SECRET=${{ secrets.TREASURY_SECRET }}" \
+              --name ${{ env.REPOSITORY }} -p 80:3005 ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
