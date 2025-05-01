@@ -45,6 +45,9 @@ jobs:
     needs: docker-build
 
     steps:
+      - name: Set ORG_NAME
+        run: echo "ORG_NAME=${GITHUB_REPOSITORY%%/*}" >> $GITHUB_ENV
+
       - name: set lower case envs
         run: echo "REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]' | tr '/' '_')" >> $GITHUB_ENV
 
@@ -57,7 +60,7 @@ jobs:
           script: |
             docker stop ${{env.REPOSITORY}} || true
             docker rm ${{env.REPOSITORY}} || true
-            docker pull ghcr.io/${{github.actor}}/${{env.REPOSITORY}}:latest
+            docker pull ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:latest
             docker run -d \
               --env DATABASE_URL=${{ secrets.DATABASE_URL }} \
               --env JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }} \
