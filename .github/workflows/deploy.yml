@@ -12,6 +12,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Set ORG_NAME
+        run: echo "ORG_NAME=${GITHUB_REPOSITORY%%/*}" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -28,14 +31,14 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{github.actor}}
-          password: ${{secrets.GITHUB_TOKEN}}
+          password: ${{ secrets.GH_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ghcr.io/${{github.actor}}/${{env.REPOSITORY}}:latest,ghcr.io/${{github.actor}}/${{env.REPOSITORY}}:${{ github.sha }}
+          tags: ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:latest,ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -71,4 +74,4 @@ jobs:
               --env SOLANA_CLUSTER=${{ secrets.SOLANA_CLUSTER }} \
               --env TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }} \
               --env TREASURY_SECRET=${{ secrets.TREASURY_SECRET }} \
-              --name ${{env.REPOSITORY}} -p 80:3005 ghcr.io/${{github.actor}}/${{env.REPOSITORY}}:latest
+              --name ${{env.REPOSITORY}} -p 80:3005 ghcr.io/${{ env.ORG_NAME }}/${{env.REPOSITORY}}:latest
