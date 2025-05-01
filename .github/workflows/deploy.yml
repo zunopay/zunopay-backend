@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: set lower case envs
         run: echo "REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]' | tr '/' '_')" >> $GITHUB_ENV
