@@ -50,6 +50,7 @@
     "lodash": "^4.17.21",
     "nest-commander": "^3.17.0",
     "nestjs-prisma": "^0.22.0",
+    "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -103,5 +104,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "resolutions": {
+    "@solana/web3.js": "1.95.4"
   }
 }
