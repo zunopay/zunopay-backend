@@ -86,4 +86,4 @@ jobs:
               --env "SOLANA_CLUSTER=${{ secrets.SOLANA_CLUSTER }}" \
               --env "TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }}" \
               --env "TREASURY_SECRET=${{ secrets.TREASURY_SECRET }}" \
-              --name ${{ env.REPOSITORY }} -p 80:3005 ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
+              --name ${{ env.REPOSITORY }} -p 3005:3005 ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
