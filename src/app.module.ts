@@ -14,6 +14,8 @@ import { PrivyModule } from './third-party/privy/privy.module';
 import { IndexerService } from './indexer/indexer.service';
 import { IndexerModule } from './indexer/indexer.module';
 import { WebhookModule } from './indexer/webhook/webhook.module';
+import { MerchantService } from './merchant/merchant.service';
+import { MerchantModule } from './merchant/merchant.module';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { WebhookModule } from './indexer/webhook/webhook.module';
     PrivyModule,
     IndexerModule,
     WebhookModule,
+    MerchantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -35,6 +35,22 @@ model User {
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
   points           UserRewardPoints[]
+  merchant         Merchant?
+}
+
+model Merchant {
+  id          Int              @id @default(autoincrement())
+  displayName String
+  logo        String            @default("")
+  address     String
+  category    MerchantCategory
+  userId      Int              @unique
+  user        User             @relation(fields: [userId], references: [id])
+}
+
+enum MerchantCategory {
+  Restraunt
+  Groceries
 }
 
 model Wallet {
