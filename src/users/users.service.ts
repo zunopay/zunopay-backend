@@ -44,24 +44,22 @@ export class UsersService {
     private readonly privyService: PrivyService,
   ) {}
 
-  async getBalance(userId: number) : Promise<WalletBalanceInput> {
+  async getBalance(userId: number): Promise<WalletBalanceInput> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { wallet: { select: { address: true } }, region: true },
     });
 
     if (!user.wallet) {
-      throw new BadRequestException(
-        " User doesn't have any wallet registered ",
-      );
+      throw new BadRequestException("User doesn't have any wallet registered");
     }
 
     const balance = await this.paymentService.getWalletBalance(
       user.wallet.address,
     );
 
-    // TODO: Convert usdc balance to correct currency 
-    return {balance, currency: RegionToCurrency[user.region] };
+    // TODO: Convert usdc balance to correct currency
+    return { balance, currency: RegionToCurrency[user.region] };
   }
 
   async findOneById(id: number) {
@@ -204,16 +202,14 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (user.emailVerifiedAt) {
-      throw new UnauthorizedException(' Email is already verified ');
+      throw new UnauthorizedException('Email is already verified');
     }
 
     const { isAuthenticated, wallet } =
       await this.privyService.authenticateUser(user.email);
 
     if (!isAuthenticated) {
-      throw new UnauthorizedException(
-        ' User has not authenticated their email ',
-      );
+      throw new UnauthorizedException('User has not authenticated their email');
     }
 
     let walletAddress: string = wallet;
@@ -332,7 +328,7 @@ export class UsersService {
 /**
  * 1. Return currency in local value as per region
  * 2. Generate the QR as per region
- * 3. 
- * 
- * 
+ * 3.
+ *
+ *
  */

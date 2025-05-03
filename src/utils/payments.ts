@@ -97,8 +97,8 @@ export function isSolanaAddress(value: unknown): boolean {
 }
 
 export const RegionToCurrency = {
-  [SupportedRegion.IN] : Currency.INR,
-  [SupportedRegion.EU] : Currency.EUR,
-  [SupportedRegion.BR] : Currency.USD,
-  [SupportedRegion.SG] : Currency.USD
-}
+  [SupportedRegion.IN]: Currency.INR,
+  [SupportedRegion.EU]: Currency.EUR,
+  [SupportedRegion.BR]: Currency.USD,
+  [SupportedRegion.SG]: Currency.USD,
+};

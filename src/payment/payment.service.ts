@@ -193,8 +193,8 @@ export class PaymentService {
 
       const balance = getUSDCUiAmount(Number(account.amount));
       return balance;
-    } catch (_) {
-      throw new InternalServerErrorException(' Failed to get wallet balance ');
+    } catch (e) {
+      throw new InternalServerErrorException('Failed to get wallet balance');
     }
   }
 
