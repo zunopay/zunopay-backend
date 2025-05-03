@@ -244,7 +244,7 @@ export class UsersService {
     const isCommitmentExists = !!registry;
     if (isCommitmentExists) {
       throw new BadRequestException(
-        ' Payment address already exists, use different payment address for this account. Contact us if not you ',
+        'Payment address already exists, use different payment address for this account. Contact us if not you',
       );
     }
 

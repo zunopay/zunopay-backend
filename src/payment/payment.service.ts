@@ -82,6 +82,12 @@ export class PaymentService {
       include: { user: { select: { wallet: { select: { address: true } } } } },
     });
 
+    if (!registry) {
+      throw new NotFoundException(
+        'Receiver have not registered the vpa, onboard them and earn points',
+      );
+    }
+
     return {
       ...receiver,
       vpa: receiver.vpa,
