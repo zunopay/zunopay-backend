@@ -54,12 +54,10 @@ import { IndexerService } from '../indexer/indexer.service';
 import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
-  TODO: 
-  1. Register
-  2. KYC
-  3. Send
-  4. Receive Notification
-  5. Offramp
+TODO:
+  1. Section to show active merchants.
+  2. Make transfer indexing error proof.
+  3. Improve UI for web and mobile view.
 */
 
 @Injectable()
@@ -320,7 +318,7 @@ export class PaymentService {
 
     if (!receiverRegistry || !receiverRegistry.user.wallet?.address) {
       throw new BadRequestException(
-        " Receiver either haven't got verified or registered. Get them register to earn rewards ",
+        "Receiver either haven't got verified or registered. Get them register to earn rewards",
       );
     }
 

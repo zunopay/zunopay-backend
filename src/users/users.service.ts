@@ -69,13 +69,20 @@ export class UsersService {
   async fetchMe(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { registry: { select: { verification: true } } },
+      include: {
+        registry: { select: { verification: true } },
+        wallet: { select: { address: true } },
+      },
     });
 
     if (!user) throw new Error('User not found');
 
     const { registry, ...rest } = user;
-    return { ...rest, verification: !!registry?.verification };
+    return {
+      ...rest,
+      verification: !!registry?.verification,
+      walletAddress: rest.wallet.address,
+    };
   }
 
   async findOneByUsername(username: string): Promise<User> {

@@ -1,6 +1,7 @@
 import { Role, SupportedRegion, User } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { IsBoolean, IsEnum, IsNumber, IsString } from 'class-validator';
+import { IsSolanaAddress } from 'src/decorators/isSolanaAddress';
 
 export class UserDto {
   @IsNumber()
@@ -26,9 +27,12 @@ export class UserDto {
 
   @IsBoolean()
   isKycVerified: boolean;
+
+  @IsSolanaAddress()
+  walletAddress: string;
 }
 
-type UserInput = User & { verification: boolean };
+export type UserInput = User & { verification: boolean; walletAddress: string };
 
 export const toUserDto = (user: UserInput) => {
   const plainUserDto: UserDto = {
@@ -40,6 +44,7 @@ export const toUserDto = (user: UserInput) => {
     isEmailVerified: !!user.emailVerifiedAt,
     region: user.region,
     isKycVerified: !!user.verification,
+    walletAddress: user.walletAddress,
   };
 
   const userDto: UserDto = plainToInstance(UserDto, plainUserDto);
