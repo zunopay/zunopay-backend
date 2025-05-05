@@ -9,7 +9,8 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
-import { ConnectBankDto, toConnectBankDto } from './dto/connect-bank.dto';
+import { ConnectedVpaDto, toConnectedVpaDto } from './dto/connected-vpa.dto';
+import { ConnectBankDto } from './dto/connect-bank.dto';
 
 @Controller('user')
 @ApiTags('User')
@@ -37,16 +38,19 @@ export class UserController {
 
   @UserAuth()
   @Get('/get/vpa')
-  async getConnectedVpa(@UserEntity() user: UserPayload){
+  async getConnectedVpa(@UserEntity() user: UserPayload) {
     const data = await this.userService.getConnectedVpa(user.id);
-    return toConnectBankDto(data);
+    return toConnectedVpaDto(data);
   }
 
   @UserAuth()
   @Patch('/connect-bank')
-  async connectBank(@UserEntity() user: UserPayload, @Body() body: ConnectBankDto) {
+  async connectBank(
+    @UserEntity() user: UserPayload,
+    @Body() body: ConnectBankDto,
+  ) {
     const data = await this.userService.connectBank(user.id, body.vpa);
-    return toConnectBankDto(data);
+    return toConnectedVpaDto(data);
   }
 
   @RolesGuard([Role.Admin])

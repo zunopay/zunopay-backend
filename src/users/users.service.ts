@@ -20,7 +20,7 @@ import { PrivyService } from '../third-party/privy/privy.service';
 import { WalletBalanceInput } from './dto/wallet-balance.dto';
 import { RegionToCurrency } from 'src/utils/payments';
 import { UserInput } from './dto/user.dto';
-import { ConnectBankInput } from './dto/connect-bank.dto';
+import { ConnectedVpaInput } from './dto/connected-vpa.dto';
 
 @Injectable()
 export class UsersService {
@@ -248,8 +248,8 @@ export class UsersService {
       include: { verification: true },
     });
 
-    if(!registry){
-      throw new NotFoundException("User doesn't have VPA connected to wallet")
+    if (!registry) {
+      throw new NotFoundException("User doesn't have VPA connected to wallet");
     }
 
     return {
@@ -258,7 +258,7 @@ export class UsersService {
     };
   }
 
-  async connectBank(userId: number, vpa: string) : Promise<ConnectBankInput> {
+  async connectBank(userId: number, vpa: string): Promise<ConnectedVpaInput> {
     const commitment = generateCommitment(vpa);
 
     // check if verified vpa already exists
@@ -279,7 +279,7 @@ export class UsersService {
       create: { commitment, vpa, user: { connect: { id: userId } } },
     });
 
-    return { vpa: updatedRegistry.vpa, verification: false }
+    return { vpa: updatedRegistry.vpa, verification: false };
   }
 
   async verifyVpa(kycVerifier: UserPayload, body: VerifyUserDto) {
