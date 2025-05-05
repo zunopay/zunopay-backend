@@ -8,7 +8,6 @@ import {
 } from './dto/types';
 import { BASE_SPHERE_URL } from '../../constants';
 import { UserOfframpProvider } from '@prisma/client';
-import { constructDigitalTransferTransaction } from '../../utils/payments';
 import { Connection } from '@solana/web3.js';
 import { getConnection, getSphereApiClient } from '../../utils/connection';
 import { Currency } from '../../types/payment';

@@ -7,17 +7,18 @@ import {
 import { ReceiverBankingDetail, ReceiverQrDetails } from './dto/types';
 import { isNull } from 'lodash';
 import {
-  constructDigitalTransferTransaction,
   getCurrencyValue,
-  getUSDCAccount,
   getUSDCUiAmount,
   isSolanaAddress,
 } from '../utils/payments';
 import { TransferParams } from './dto/transfer-params.dto';
 import {
+  ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
+  Transaction,
+  TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -30,14 +31,21 @@ import { PrismaService } from 'nestjs-prisma';
 import { SphereService } from '../third-party/sphere/sphere.service';
 import { generateCommitment } from '../utils/hash';
 import {
+  FEE_DESTINATION,
+  FEE_USDC,
+  MIN_COMPUTE_PRICE,
   MIN_COMPUTE_PRICE_IX,
+  TOKEN_ACCOUNT_FEE_USDC,
   UPI_VPA_PREFIX,
   USDC_ADDRESS,
 } from '../constants';
 import {
+  Account,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
   getAccount,
+  getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
   TokenAccountNotFoundError,
   TokenInvalidAccountOwnerError,
@@ -46,7 +54,6 @@ import {
 } from '@solana/spl-token';
 import { Currency } from '../types/payment';
 import { TokenType, TransferStatus } from '@prisma/client';
-import { WebhookService } from '../indexer/webhook/webhook.service';
 import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
 import { encodeURL } from '@solana/pay';
 import BigNumber from 'bignumber.js';
@@ -55,9 +62,8 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
 TODO:
-  1. Section to show active merchants.
+  1. Add transfer instruction to take 0.01$ to offset transaction fees
   2. Make transfer indexing error proof.
-  3. Improve UI for web and mobile view.
 */
 
 @Injectable()
@@ -114,8 +120,7 @@ export class PaymentService {
       // Construct transaction
       const reference = Keypair.generate().publicKey;
       const senderWalletAddress = sender.wallet.address;
-      const transaction = await constructDigitalTransferTransaction(
-        this.connection,
+      const transaction = await this.constructDigitalTransferTransaction(
         senderWalletAddress,
         receiverWalletAddress,
         amount,
@@ -188,14 +193,10 @@ export class PaymentService {
     const owner = new PublicKey(walletAddress);
     const mint = new PublicKey(USDC_ADDRESS);
     try {
-      const tokenAddress = await getUSDCAccount(owner);
-      const account = await this.getOrCreateTokenAccount(
-        tokenAddress,
-        owner,
-        mint,
-      );
+      const { balance: rawBalance } =
+        await this.getTokenAccountOrCreateInstruction(owner, mint);
 
-      const balance = getUSDCUiAmount(Number(account.amount));
+      const balance = getUSDCUiAmount(rawBalance);
       return balance;
     } catch (e) {
       throw new InternalServerErrorException('Failed to get wallet balance');
@@ -226,14 +227,22 @@ export class PaymentService {
     return transferHistory;
   }
 
-  private async getOrCreateTokenAccount(
-    tokenAddress: PublicKey,
+  private async getTokenAccountOrCreateInstruction(
     owner: PublicKey,
     mint: PublicKey,
-  ) {
+  ): Promise<{
+    address: PublicKey;
+    instruction?: TransactionInstruction;
+    balance?: number;
+  }> {
+    const tokenAddress = await getAssociatedTokenAddress(mint, owner);
+
     try {
       const tokenAccount = await getAccount(this.connection, tokenAddress);
-      return tokenAccount;
+      return {
+        address: tokenAccount.address,
+        balance: Number(tokenAccount.amount),
+      };
     } catch (error: unknown) {
       if (
         error instanceof TokenAccountNotFoundError ||
@@ -250,35 +259,90 @@ export class PaymentService {
             ASSOCIATED_TOKEN_PROGRAM_ID,
           );
 
-          const latestBlockhash =
-            await this.connection.getLatestBlockhash('confirmed');
-          const transactionMessage = new TransactionMessage({
-            payerKey: payer,
-            recentBlockhash: latestBlockhash.blockhash,
-            instructions: [MIN_COMPUTE_PRICE_IX, instruction],
-          }).compileToV0Message([]);
-
-          const transaction = new VersionedTransaction(transactionMessage);
-          const signedTransaction = getIdentitySignature(transaction);
-          const signature = await this.connection.sendTransaction(
-            signedTransaction,
-            { skipPreflight: true },
-          );
-          await this.connection.confirmTransaction({
-            ...latestBlockhash,
-            signature,
-          });
+          return { address: tokenAddress, instruction };
         } catch (error: unknown) {}
-
-        const account = await getAccount(this.connection, tokenAddress);
-        if (!account.mint.equals(mint)) throw new TokenInvalidMintError();
-        if (!account.owner.equals(owner)) throw new TokenInvalidOwnerError();
-
-        return account;
       } else {
         throw error;
       }
     }
+  }
+
+  async constructDigitalTransferTransaction(
+    sender: string,
+    receiver: string,
+    amount: number,
+    reference: PublicKey,
+  ) {
+    const mint = new PublicKey(USDC_ADDRESS);
+    const sourceOwner = new PublicKey(sender);
+    const destinationOwner = new PublicKey(receiver);
+    const feePayer = getTreasuryPublicKey();
+
+    let transferFee = FEE_USDC;
+    const { address: source, instruction: createSourceTokenAccount } =
+      await this.getTokenAccountOrCreateInstruction(sourceOwner, mint);
+    transferFee += createSourceTokenAccount ? TOKEN_ACCOUNT_FEE_USDC : 0;
+
+    const { address: destination, instruction: createDestinationTokenAccount } =
+      await this.getTokenAccountOrCreateInstruction(destinationOwner, mint);
+    transferFee += createDestinationTokenAccount ? TOKEN_ACCOUNT_FEE_USDC : 0;
+
+    const transferFeeWallet = new PublicKey(FEE_DESTINATION);
+    const transferFeeWalletTokenAddress = await getAssociatedTokenAddress(
+      mint,
+      transferFeeWallet,
+    );
+
+    const transferFeeInstruction = createTransferInstruction(
+      source,
+      transferFeeWalletTokenAddress,
+      sourceOwner,
+      transferFee,
+    );
+
+    const transferToDestinationInstruction = createTransferInstruction(
+      source,
+      destination,
+      sourceOwner,
+      amount,
+    );
+
+    /* Add reference key for polling the transaction confirmation */
+    transferToDestinationInstruction.keys.push({
+      pubkey: reference,
+      isSigner: false,
+      isWritable: false,
+    });
+
+    const computeBudgetInstruction = ComputeBudgetProgram.setComputeUnitPrice({
+      microLamports: MIN_COMPUTE_PRICE,
+    });
+    const latestBlockhash = await this.connection.getLatestBlockhash();
+
+    let transaction = new Transaction({ ...latestBlockhash, feePayer }).add(
+      computeBudgetInstruction,
+    );
+
+    if (createSourceTokenAccount) {
+      transaction = transaction.add(createSourceTokenAccount);
+    }
+
+    if (createDestinationTokenAccount) {
+      transaction = transaction.add(createDestinationTokenAccount);
+    }
+
+    transaction = transaction
+      .add(transferFeeInstruction)
+      .add(transferToDestinationInstruction);
+
+    const signedTransaction = getIdentitySignature(transaction);
+    const serializedTransaction = signedTransaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
+
+    return serializedTransaction;
   }
 
   /*

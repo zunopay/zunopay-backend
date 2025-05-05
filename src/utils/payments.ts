@@ -10,7 +10,13 @@ import {
   PublicKey,
   Transaction,
 } from '@solana/web3.js';
-import { MIN_COMPUTE_PRICE, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
+import {
+  FEE_DESTINATION,
+  FEE_USDC,
+  MIN_COMPUTE_PRICE,
+  USDC_ADDRESS,
+  USDC_DECIMALS,
+} from '../constants';
 import { Currency } from '../types/payment';
 import { getIdentitySignature, getTreasuryPublicKey } from './connection';
 import { SupportedRegion } from '@prisma/client';
@@ -22,58 +28,6 @@ export function getCurrencyValue(key: string): Currency {
     throw new BadRequestException('Invalid currency code.');
   }
   return Currency[currency as keyof typeof Currency];
-}
-
-export async function constructDigitalTransferTransaction(
-  connection: Connection,
-  sender: string,
-  receiver: string,
-  amount: number,
-  reference: PublicKey,
-) {
-  const mint = new PublicKey(USDC_ADDRESS);
-  const sourceOwner = new PublicKey(sender);
-  const destinationOwner = new PublicKey(receiver);
-  const feePayer = getTreasuryPublicKey();
-
-  const source = await getAssociatedTokenAddress(mint, sourceOwner, false);
-  const destination = await getAssociatedTokenAddress(
-    mint,
-    destinationOwner,
-    false,
-  );
-
-  const transferInstruction = createTransferInstruction(
-    source,
-    destination,
-    sourceOwner,
-    amount,
-  );
-
-  /* Add reference key for polling the transaction confirmation */
-  transferInstruction.keys.push({
-    pubkey: reference,
-    isSigner: false,
-    isWritable: false,
-  });
-
-  const computeBudgetInstruction = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports: MIN_COMPUTE_PRICE,
-  });
-  const latestBlockhash = await connection.getLatestBlockhash();
-
-  const transaction = new Transaction({ ...latestBlockhash, feePayer })
-    .add(computeBudgetInstruction)
-    .add(transferInstruction);
-
-  const signedTransaction = getIdentitySignature(transaction);
-  const serializedTransaction = signedTransaction
-    .serialize({
-      requireAllSignatures: false,
-    })
-    .toString('base64');
-
-  return serializedTransaction;
 }
 
 export async function getUSDCAccount(owner: PublicKey) {

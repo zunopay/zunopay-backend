@@ -7,7 +7,10 @@ export const USERNAME_MAX_SIZE = 20;
 
 export const USERNAME_REGEX = new RegExp(/^[a-zA-Z0-9_čćžšđČĆŽŠĐ]+$/);
 export const USDC_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+export const FEE_DESTINATION = '7SMfVRrJw75vPzHCQ3ckUCT9igMRre8VHmodTbaVv4R';
 export const USDC_DECIMALS = 6;
+export const FEE_USDC = 1200;
+export const TOKEN_ACCOUNT_FEE_USDC = 500000;
 
 //QR Constants
 export const UPI_VPA_PREFIX = 'upi://pay?';
