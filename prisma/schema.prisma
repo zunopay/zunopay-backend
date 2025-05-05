@@ -91,6 +91,7 @@ model UserKycVerification {
 //TODO: User partial indexing to get database level uniqueness
 model KeyWalletRegistry {
   id           Int                  @id @default(autoincrement())
+  vpa          String
   commitment   String
   user         User                 @relation(fields: [userId], references: [id])
   userId       Int                  @unique

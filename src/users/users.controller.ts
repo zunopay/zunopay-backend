@@ -8,8 +8,8 @@ import { toUserDto } from './dto/user.dto';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
-import { StartKycDto } from './dto/start-kyc.dto';
 import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
+import { ConnectBankDto, toConnectBankDto } from './dto/connect-bank.dto';
 
 @Controller('user')
 @ApiTags('User')
@@ -36,9 +36,17 @@ export class UserController {
   }
 
   @UserAuth()
-  @Post('/start-kyc')
-  async startKyc(@UserEntity() user: UserPayload, @Body() body: StartKycDto) {
-    await this.userService.startKyc(user.id, body.vpa);
+  @Get('/get/vpa')
+  async getConnectedVpa(@UserEntity() user: UserPayload){
+    const data = await this.userService.getConnectedVpa(user.id);
+    return toConnectBankDto(data);
+  }
+
+  @UserAuth()
+  @Patch('/connect-bank')
+  async connectBank(@UserEntity() user: UserPayload, @Body() body: ConnectBankDto) {
+    const data = await this.userService.connectBank(user.id, body.vpa);
+    return toConnectBankDto(data);
   }
 
   @RolesGuard([Role.Admin])

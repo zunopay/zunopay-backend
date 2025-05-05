@@ -19,6 +19,8 @@ import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { WalletBalanceInput } from './dto/wallet-balance.dto';
 import { RegionToCurrency } from 'src/utils/payments';
+import { UserInput } from './dto/user.dto';
+import { ConnectBankInput } from './dto/connect-bank.dto';
 
 @Injectable()
 export class UsersService {
@@ -66,7 +68,7 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async fetchMe(id: number) {
+  async fetchMe(id: number): Promise<UserInput> {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -240,7 +242,23 @@ export class UsersService {
     });
   }
 
-  async startKyc(userId: number, vpa: string) {
+  async getConnectedVpa(userId: number) {
+    const registry = await this.prisma.keyWalletRegistry.findUnique({
+      where: { userId },
+      include: { verification: true },
+    });
+
+    if(!registry){
+      throw new NotFoundException("User doesn't have VPA connected to wallet")
+    }
+
+    return {
+      vpa: registry.vpa,
+      verification: !!registry.verification,
+    };
+  }
+
+  async connectBank(userId: number, vpa: string) : Promise<ConnectBankInput> {
     const commitment = generateCommitment(vpa);
 
     // check if verified vpa already exists
@@ -255,12 +273,13 @@ export class UsersService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        registry: { create: { commitment } },
-      },
+    const updatedRegistry = await this.prisma.keyWalletRegistry.upsert({
+      where: { userId },
+      update: { commitment, vpa },
+      create: { commitment, vpa, user: { connect: { id: userId } } },
     });
+
+    return { vpa: updatedRegistry.vpa, verification: false }
   }
 
   async verifyVpa(kycVerifier: UserPayload, body: VerifyUserDto) {
