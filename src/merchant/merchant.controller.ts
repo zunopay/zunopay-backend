@@ -12,7 +12,7 @@ import { UpdateMerchantDto } from './dto/update-merchant.dto';
 export class MerchantController {
   constructor(private readonly merchantService: MerchantService) {}
 
-  @RolesGuard([Role.Merchant])
+  @RolesGuard([Role.Admin])
   @Post('/register')
   async register(
     @Body() body: RegisterMerchantDto,
@@ -28,7 +28,7 @@ export class MerchantController {
     return toMerchantDtoArray(merchants);
   }
 
-  @RolesGuard([Role.Merchant])
+  @RolesGuard([Role.Admin])
   @Patch('/update')
   async update(
     @Body() body: UpdateMerchantDto,

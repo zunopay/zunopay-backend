@@ -46,6 +46,7 @@ model Merchant {
   category    MerchantCategory
   userId      Int              @unique
   user        User             @relation(fields: [userId], references: [id])
+  isVerified  Boolean         @default(false)
 }
 
 enum MerchantCategory {
