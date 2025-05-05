@@ -22,7 +22,7 @@ export class MerchantController {
     return toMerchantDto(merchant);
   }
 
-  @Get('/get/merchants')
+  @Get('/get')
   async getMerchants() {
     const merchants = await this.merchantService.getMerchants();
     return toMerchantDtoArray(merchants);

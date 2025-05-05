@@ -83,7 +83,7 @@ export class UsersService {
     return {
       ...rest,
       verification: !!registry?.verification,
-      walletAddress: rest.wallet.address,
+      walletAddress: rest?.wallet?.address,
     };
   }
 

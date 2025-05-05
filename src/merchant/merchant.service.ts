@@ -32,7 +32,9 @@ export class MerchantService {
 
   // TODO: Add filters
   async getMerchants() {
-    const merchants = await this.prisma.merchant.findMany({ where: { isVerified: true } });
+    const merchants = await this.prisma.merchant.findMany({
+      where: { isVerified: true },
+    });
     return merchants;
   }
 
