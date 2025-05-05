@@ -19,8 +19,6 @@ import {
   PublicKey,
   Transaction,
   TransactionInstruction,
-  TransactionMessage,
-  VersionedTransaction,
 } from '@solana/web3.js';
 import {
   getConnection,
@@ -34,13 +32,11 @@ import {
   FEE_DESTINATION,
   FEE_USDC,
   MIN_COMPUTE_PRICE,
-  MIN_COMPUTE_PRICE_IX,
   TOKEN_ACCOUNT_FEE_USDC,
   UPI_VPA_PREFIX,
   USDC_ADDRESS,
 } from '../constants';
 import {
-  Account,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createTransferInstruction,
@@ -49,8 +45,6 @@ import {
   TOKEN_PROGRAM_ID,
   TokenAccountNotFoundError,
   TokenInvalidAccountOwnerError,
-  TokenInvalidMintError,
-  TokenInvalidOwnerError,
 } from '@solana/spl-token';
 import { Currency } from '../types/payment';
 import { TokenType, TransferStatus } from '@prisma/client';
@@ -62,8 +56,7 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
 TODO:
-  1. Add transfer instruction to take 0.01$ to offset transaction fees
-  2. Make transfer indexing error proof.
+  1. Make transfer indexing error proof.
 */
 
 @Injectable()

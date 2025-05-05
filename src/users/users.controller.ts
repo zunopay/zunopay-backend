@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserEntity } from 'src/decorators/user.decorator';
@@ -9,7 +9,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
-import { ConnectedVpaDto, toConnectedVpaDto } from './dto/connected-vpa.dto';
+import { toConnectedVpaDto } from './dto/connected-vpa.dto';
 import { ConnectBankDto } from './dto/connect-bank.dto';
 
 @Controller('user')

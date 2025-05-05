@@ -11,10 +11,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { SecurityConfig } from './config/config.interface';
 import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
-import { IndexerService } from './indexer/indexer.service';
 import { IndexerModule } from './indexer/indexer.module';
 import { WebhookModule } from './indexer/webhook/webhook.module';
-import { MerchantService } from './merchant/merchant.service';
 import { MerchantModule } from './merchant/merchant.module';
 
 @Module({

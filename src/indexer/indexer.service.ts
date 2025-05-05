@@ -6,7 +6,6 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  TransactionResponse,
 } from '@solana/web3.js';
 import {
   findReference,

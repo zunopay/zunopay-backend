@@ -18,7 +18,6 @@ import {
 import { Connection, PublicKey } from '@solana/web3.js';
 import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../../utils/connection';
-import { Public } from '@prisma/client/runtime/library';
 import bs58 from 'bs58';
 import { TokenType, TransferStatus } from '@prisma/client';
 

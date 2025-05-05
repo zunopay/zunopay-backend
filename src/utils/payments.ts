@@ -1,24 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  createTransferInstruction,
-  getAssociatedTokenAddress,
-} from '@solana/spl-token';
-import {
-  ComputeBudgetProgram,
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-} from '@solana/web3.js';
-import {
-  FEE_DESTINATION,
-  FEE_USDC,
-  MIN_COMPUTE_PRICE,
-  USDC_ADDRESS,
-  USDC_DECIMALS,
-} from '../constants';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
+import { USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { Currency } from '../types/payment';
-import { getIdentitySignature, getTreasuryPublicKey } from './connection';
 import { SupportedRegion } from '@prisma/client';
 
 export function getCurrencyValue(key: string): Currency {
