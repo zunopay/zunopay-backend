@@ -57,6 +57,8 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 /*
 TODO:
   1. Make transfer indexing error proof.
+  2. Update the landing page.
+  3. Create google form for users
 */
 
 @Injectable()
@@ -91,13 +93,6 @@ export class PaymentService {
       walletAddress: registry.user.wallet.address,
     };
   }
-
-  /**
-   *
-   * 1. Add reference public key for checking the tx on blockchain
-   * 2. Generate amount encoded Solana Pay qr and Upi/pix/iban qr
-   *
-   */
 
   async createTransferRequest(query: TransferParams, userId: number) {
     try {

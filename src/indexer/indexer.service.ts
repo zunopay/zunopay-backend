@@ -118,6 +118,7 @@ export class IndexerService {
         transfer.reference,
         TransferStatus.Success,
         senderWalletAddress,
+        transaction.signature.toString('base64'),
       );
     } catch (error) {
       console.error('Polling or validation failed', error);
@@ -159,11 +160,13 @@ export class IndexerService {
     reference: string,
     status: TransferStatus,
     senderWalletAddress?: string,
+    signature?: string,
   ) {
     await this.prisma.transfer.update({
       where: { id: transferId },
       data: {
         status,
+        signature,
         ...(senderWalletAddress && {
           senderWallet: {
             connectOrCreate: {
