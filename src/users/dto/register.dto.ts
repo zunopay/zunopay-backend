@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsStrongPassword,
+  MinLength,
 } from 'class-validator';
 import { IsValidUsername } from '../../decorators/isValidUsername';
 
@@ -22,8 +23,8 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
+  @MinLength(8)
   @IsString()
-  @IsStrongPassword()
   password: string;
 
   @ApiProperty({ enum: SupportedRegion })
