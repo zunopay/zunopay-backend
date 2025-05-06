@@ -143,6 +143,7 @@ export class UsersService {
       return user;
     });
 
+    await this.rewardUser(user.id, RewardPointTask.EarlyUser);
     return user;
   }
 
