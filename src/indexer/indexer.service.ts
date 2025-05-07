@@ -40,7 +40,7 @@ export class IndexerService {
     const splToken = new PublicKey(USDC_ADDRESS);
     let senderWalletAddress: string;
 
-    const TEN_MINUTES = 10 * 60 * 1000;
+    const TWO_MINUTES = 2 * 60 * 1000;
     const POLL_INTERVAL = 1000;
 
     const start = Date.now();
@@ -55,7 +55,7 @@ export class IndexerService {
                 `Checking for transaction, reference: ${transfer.reference} ...`,
               );
 
-              if (Date.now() - start > TEN_MINUTES) {
+              if (Date.now() - start > TWO_MINUTES) {
                 clearInterval(interval);
                 try {
                   await this.sendTransferResponseEvent(

@@ -73,16 +73,15 @@ export class PaymentService {
   }
 
   async getReceiver(encodedQr: string): Promise<ReceiverBankingDetail> {
-    if(isSolanaAddress(encodedQr)){
+    if (isSolanaAddress(encodedQr)) {
       const walletAddress = encodedQr;
       return {
         vpa: '',
         walletAddress,
         name: '',
-        currency: Currency.USD
-      }
+        currency: Currency.USD,
+      };
     }
-
 
     const receiver = this.decodeQr(encodedQr);
 

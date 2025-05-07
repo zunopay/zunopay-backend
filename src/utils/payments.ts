@@ -44,5 +44,5 @@ export const RegionToCurrency = {
 
 export enum VpaType {
   Address = 'Address',
-  PaymentInterface = 'PaymentInterface'
+  PaymentInterface = 'PaymentInterface',
 }
