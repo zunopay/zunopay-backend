@@ -1,4 +1,4 @@
-import { Merchant, MerchantCategory } from '@prisma/client';
+import { Merchant, MerchantCategory, MerchantStatus } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { IsEnum, IsNumber, IsString } from 'class-validator';
 
@@ -17,6 +17,9 @@ export class MerchantDto {
 
   @IsEnum(MerchantCategory)
   category: MerchantCategory;
+
+  @IsEnum(MerchantStatus)
+  status: MerchantStatus;
 }
 
 export function toMerchantDto(input: Merchant) {
@@ -26,6 +29,7 @@ export function toMerchantDto(input: Merchant) {
     logo: input.logo,
     address: input.address,
     category: input.category,
+    status: input.status,
   };
 
   const merchantDto = plainToInstance(MerchantDto, plainMerchantDto);
