@@ -34,9 +34,10 @@ export function isSolanaAddress(value: unknown): boolean {
   }
 }
 
+//TODO: Change this after conversion api
 export const RegionToCurrency = {
-  [SupportedRegion.IN]: Currency.INR,
-  [SupportedRegion.EU]: Currency.EUR,
+  [SupportedRegion.IN]: Currency.USD,
+  [SupportedRegion.EU]: Currency.USD,
   [SupportedRegion.BR]: Currency.USD,
   [SupportedRegion.SG]: Currency.USD,
 };

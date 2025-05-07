@@ -57,8 +57,6 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 /*
 TODO:
   1. Make transfer indexing error proof.
-  2. Update the landing page.
-  3. Create google form for users
 */
 
 @Injectable()
