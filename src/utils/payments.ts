@@ -41,3 +41,8 @@ export const RegionToCurrency = {
   [SupportedRegion.BR]: Currency.USD,
   [SupportedRegion.SG]: Currency.USD,
 };
+
+export enum VpaType {
+  Address = 'Address',
+  PaymentInterface = 'PaymentInterface'
+}

@@ -10,6 +10,7 @@ import {
   getCurrencyValue,
   getUSDCUiAmount,
   isSolanaAddress,
+  VpaType,
 } from '../utils/payments';
 import { TransferParams } from './dto/transfer-params.dto';
 import {
@@ -72,8 +73,21 @@ export class PaymentService {
   }
 
   async getReceiver(encodedQr: string): Promise<ReceiverBankingDetail> {
+    if(isSolanaAddress(encodedQr)){
+      const walletAddress = encodedQr;
+      return {
+        vpa: '',
+        walletAddress,
+        name: '',
+        currency: Currency.USD
+      }
+    }
+
+
     const receiver = this.decodeQr(encodedQr);
+
     const commitment = generateCommitment(receiver.vpa);
+
     const registry = await this.prisma.keyWalletRegistry.findFirst({
       where: { commitment, verification: { isNot: null } },
       include: { user: { select: { wallet: { select: { address: true } } } } },
