@@ -350,6 +350,11 @@ export class UsersService {
     rewards.forEach((data) => (totalPoints += data.reward.points));
     return totalPoints;
   }
+
+  async getRefCodes(){
+    const refCodes = await this.prisma.referralCode.findMany({ where:{ refereeId: null } });
+    return refCodes;
+  }
 }
 
 /**

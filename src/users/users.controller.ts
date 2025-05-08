@@ -71,4 +71,11 @@ export class UserController {
   async getRewardPoints(@UserEntity() user: UserPayload): Promise<number> {
     return await this.userService.getUserPoints(user.id);
   }
+
+  @RolesGuard([Role.Admin])
+  @Patch('/get/check')
+  async getCheck() {
+    const codes = await this.userService.getRefCodes();
+    return codes;
+  }
 }
