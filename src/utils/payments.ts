@@ -22,8 +22,7 @@ export async function getUSDCAccount(owner: PublicKey) {
 }
 
 export function getUSDCUiAmount(amount: number) {
-  const uiAmount = (amount / Math.pow(10, USDC_DECIMALS)).toFixed(3);
-  return uiAmount;
+  return ((amount ?? 0) / Math.pow(10, USDC_DECIMALS)).toFixed(3);
 }
 
 export function isSolanaAddress(value: unknown): boolean {

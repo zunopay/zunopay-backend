@@ -351,8 +351,10 @@ export class UsersService {
     return totalPoints;
   }
 
-  async getRefCodes(){
-    const refCodes = await this.prisma.referralCode.findMany({ where:{ refereeId: null } });
+  async getRefCodes() {
+    const refCodes = await this.prisma.referralCode.findMany({
+      where: { refereeId: null },
+    });
     return refCodes;
   }
 }

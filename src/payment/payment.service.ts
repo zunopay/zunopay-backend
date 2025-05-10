@@ -192,8 +192,35 @@ export class PaymentService {
     const owner = new PublicKey(walletAddress);
     const mint = new PublicKey(USDC_ADDRESS);
     try {
-      const { balance: rawBalance } =
+      const { balance: rawBalance, instruction } =
         await this.getTokenAccountOrCreateInstruction(owner, mint);
+
+      if (instruction) {
+        try {
+          const payer = getTreasuryPublicKey();
+          const latestBlockhash = await this.connection.getLatestBlockhash({
+            commitment: 'confirmed',
+          });
+          const transaction = new Transaction({
+            ...latestBlockhash,
+            feePayer: payer,
+          })
+            .add(
+              ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: MIN_COMPUTE_PRICE,
+              }),
+            )
+            .add(instruction);
+          const signedTransaction = getIdentitySignature(transaction);
+          const rawTransaction = signedTransaction.serialize();
+
+          await this.connection.sendRawTransaction(rawTransaction);
+        } catch (e) {
+          console.log(
+            `Failed to create token account for wallet ${walletAddress}`,
+          );
+        }
+      }
 
       const balance = getUSDCUiAmount(rawBalance);
       return balance;
