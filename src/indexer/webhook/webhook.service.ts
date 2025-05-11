@@ -133,8 +133,8 @@ export class WebhookService {
 
     console.log(instruction.accounts);
 
-    const authority = instruction.accounts.at(2);
-    const destinationAta = instruction.accounts.at(0);
+    const authority = instruction.accounts.at(3);
+    const destinationAta = instruction.accounts.at(2);
     const account = await getAccount(
       this.connection,
       new PublicKey(destinationAta),
