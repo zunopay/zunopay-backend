@@ -22,6 +22,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../../utils/connection';
 import bs58 from 'bs58';
 import { TokenType, TransferStatus } from '@prisma/client';
+import { USDC_ADDRESS } from 'src/constants';
 
 @Injectable()
 export class WebhookService {
@@ -107,25 +108,6 @@ export class WebhookService {
     );
   }
 
-  /*
-  [{
-    accountData: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
-    description: 'DQ1jbKrjq4HSY7zqGHxn1DjQ4JTEx7KV4VubX78sbdH4 transferred 0.1 USDC to 88yZe9H7b27TND3Agq2L9pAASRbjAFnHVEMxu4YjZ2cm.',
-    events: {},
-    fee: 79994,
-    feePayer: 'DQ1jbKrjq4HSY7zqGHxn1DjQ4JTEx7KV4VubX78sbdH4',
-    instructions: [ [Object], [Object], [Object] ],
-    nativeTransfers: [],
-    signature: '273XenMzbRnrQqKkXkuUm1zKXewS5kn6rxHkscguwu6fM95U2gzuTCXXfGyXkAsVwcT5zAKExbbvSL9QbbPaBR8z',
-    slot: 339250951,
-    source: 'SOLANA_PROGRAM_LIBRARY',
-    timestamp: 1746945113,
-    tokenTransfers: [ [Object] ],
-    transactionError: null,
-    type: 'TRANSFER'
-  }]
-  */
-
   async handleTransfer(instruction: Instruction, signature: string) {
     if (instruction.programId != TOKEN_PROGRAM_ID.toString()) {
       return;
@@ -133,8 +115,16 @@ export class WebhookService {
 
     console.log(instruction.accounts);
 
-    const authority = instruction.accounts.at(3);
-    const destinationAta = instruction.accounts.at(2);
+    let sender: string, destinationAta: string;
+
+    if (instruction.accounts.at(1) == USDC_ADDRESS) {
+      sender = instruction.accounts.at(3);
+      destinationAta = instruction.accounts.at(2);
+    } else {
+      sender = instruction.accounts.at(2);
+      destinationAta = instruction.accounts.at(1);
+    }
+
     const account = await getAccount(
       this.connection,
       new PublicKey(destinationAta),
@@ -149,8 +139,8 @@ export class WebhookService {
       create: {
         senderWallet: {
           connectOrCreate: {
-            where: { address: authority },
-            create: { address: authority, lastInteractedAt: new Date() },
+            where: { address: sender },
+            create: { address: sender, lastInteractedAt: new Date() },
           },
         },
         receiverWallet: {
@@ -167,8 +157,8 @@ export class WebhookService {
       update: {
         senderWallet: {
           connectOrCreate: {
-            where: { address: authority },
-            create: { address: authority, lastInteractedAt: new Date() },
+            where: { address: sender },
+            create: { address: sender, lastInteractedAt: new Date() },
           },
         },
         receiverWallet: {
