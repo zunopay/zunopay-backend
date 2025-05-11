@@ -57,9 +57,8 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
 TODO:
-  1. Make transfer indexing error proof.
-  2. Add sphere widget
-  3. Add referral fee incentives
+  1. Add sphere widget
+  2. Add referral fee incentives
 */
 
 @Injectable()

@@ -89,7 +89,6 @@ export class WebhookService {
   }
 
   handleWebhookEvent(enrichedTransactions: EnrichedTransaction[]) {
-    console.log(enrichedTransactions);
     return Promise.all(
       enrichedTransactions.map((transaction) => {
         switch (transaction.type) {
@@ -112,8 +111,6 @@ export class WebhookService {
     if (instruction.programId != TOKEN_PROGRAM_ID.toString()) {
       return;
     }
-
-    console.log(instruction.accounts);
 
     let sender: string, destinationAta: string;
 
