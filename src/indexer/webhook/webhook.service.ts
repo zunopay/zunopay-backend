@@ -13,6 +13,8 @@ import * as jwt from 'jsonwebtoken';
 import {
   getAccount,
   TOKEN_PROGRAM_ID,
+  transfer,
+  transferChecked,
   transferInstructionData,
 } from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -105,13 +107,34 @@ export class WebhookService {
     );
   }
 
+  /*
+  [{
+    accountData: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    description: 'DQ1jbKrjq4HSY7zqGHxn1DjQ4JTEx7KV4VubX78sbdH4 transferred 0.1 USDC to 88yZe9H7b27TND3Agq2L9pAASRbjAFnHVEMxu4YjZ2cm.',
+    events: {},
+    fee: 79994,
+    feePayer: 'DQ1jbKrjq4HSY7zqGHxn1DjQ4JTEx7KV4VubX78sbdH4',
+    instructions: [ [Object], [Object], [Object] ],
+    nativeTransfers: [],
+    signature: '273XenMzbRnrQqKkXkuUm1zKXewS5kn6rxHkscguwu6fM95U2gzuTCXXfGyXkAsVwcT5zAKExbbvSL9QbbPaBR8z',
+    slot: 339250951,
+    source: 'SOLANA_PROGRAM_LIBRARY',
+    timestamp: 1746945113,
+    tokenTransfers: [ [Object] ],
+    transactionError: null,
+    type: 'TRANSFER'
+  }]
+  */
+
   async handleTransfer(instruction: Instruction, signature: string) {
     if (instruction.programId != TOKEN_PROGRAM_ID.toString()) {
       return;
     }
 
+    console.log(instruction.accounts);
+
     const authority = instruction.accounts.at(2);
-    const destinationAta = instruction.accounts.at(1);
+    const destinationAta = instruction.accounts.at(0);
     const account = await getAccount(
       this.connection,
       new PublicKey(destinationAta),
@@ -139,7 +162,7 @@ export class WebhookService {
         status: TransferStatus.Success,
         signature,
         amount: Number(transferData.amount),
-        tokenType: TokenType.USDC, // TODO: Change this if support more currency,
+        tokenType: TokenType.USDC, // TODO: Change this when support more currency,
       },
       update: {
         senderWallet: {
@@ -157,7 +180,7 @@ export class WebhookService {
         status: TransferStatus.Success,
         signature,
         amount: Number(transferData.amount),
-        tokenType: TokenType.USDC, // TODO: Change this if support more currency, },
+        tokenType: TokenType.USDC, // TODO: Change this when support more currency,
       },
     });
   }

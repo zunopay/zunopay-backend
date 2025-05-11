@@ -21,6 +21,7 @@ import { WalletBalanceInput } from './dto/wallet-balance.dto';
 import { RegionToCurrency } from 'src/utils/payments';
 import { UserInput } from './dto/user.dto';
 import { ConnectedVpaInput } from './dto/connected-vpa.dto';
+import { WebhookService } from 'src/indexer/webhook/webhook.service';
 
 @Injectable()
 export class UsersService {
@@ -44,6 +45,7 @@ export class UsersService {
     private readonly authService: AuthService,
     private readonly paymentService: PaymentService,
     private readonly privyService: PrivyService,
+    private readonly webhookService: WebhookService,
   ) {}
 
   async getBalance(userId: number): Promise<WalletBalanceInput> {
@@ -241,6 +243,7 @@ export class UsersService {
         },
       },
     });
+    this.webhookService.subscribeTo(walletAddress);
   }
 
   async getConnectedVpa(userId: number) {

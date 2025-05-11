@@ -118,7 +118,7 @@ export class IndexerService {
         transfer.reference,
         TransferStatus.Success,
         senderWalletAddress,
-        transaction.signature.toString('base64'),
+        signature,
       );
     } catch (error) {
       console.error('Polling or validation failed', error);

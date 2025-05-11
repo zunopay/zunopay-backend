@@ -42,11 +42,11 @@ export class WebhookDto {
   authHeader?: string;
 }
 
-export function toHeliusWebhookDto(heliusWebhook: Webhook) {
-  const heliusWebhookDto = plainToInstance(WebhookDto, heliusWebhook);
-  return heliusWebhookDto;
+export function toWebhookDto(webhook: Webhook) {
+  const webhookDto = plainToInstance(WebhookDto, webhook);
+  return webhookDto;
 }
 
-export const toHeliusWebhookDtoArray = (webhooks: Webhook[]) => {
-  return Promise.all(webhooks.map(toHeliusWebhookDto));
+export const toWebhookDtoArray = (webhooks: Webhook[]) => {
+  return Promise.all(webhooks.map(toWebhookDto));
 };

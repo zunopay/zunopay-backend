@@ -58,6 +58,8 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 /*
 TODO:
   1. Make transfer indexing error proof.
+  2. Add sphere widget
+  3. Add referral fee incentives
 */
 
 @Injectable()
@@ -117,15 +119,16 @@ export class PaymentService {
       const receiverWalletAddress = await this.resolveWalletAddress(vpa);
 
       // Construct transaction
-      const reference = Keypair.generate().publicKey;
+      const referenceKey = Keypair.generate().publicKey;
       const senderWalletAddress = sender.wallet.address;
       const transaction = await this.constructDigitalTransferTransaction(
         senderWalletAddress,
         receiverWalletAddress,
         amount,
-        reference,
+        referenceKey,
       );
 
+      const reference = referenceKey.toString();
       const transfer = await this.prisma.transfer.create({
         data: {
           senderWallet: { connect: { address: senderWalletAddress } },
@@ -139,7 +142,7 @@ export class PaymentService {
             },
           },
           amount,
-          reference: reference.toString(),
+          reference,
           tokenType: TokenType.USDC,
           status: TransferStatus.Pending,
         },
