@@ -4,14 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ReceiverBankingDetail, ReceiverQrDetails } from './dto/types';
-import { isNull } from 'lodash';
-import {
-  getCurrencyValue,
-  getUSDCUiAmount,
-  isSolanaAddress,
-  VpaType,
-} from '../utils/payments';
+import { getUSDCUiAmount } from '../utils/payments';
 import { TransferParams } from './dto/transfer-params.dto';
 import {
   ComputeBudgetProgram,
@@ -28,13 +21,11 @@ import {
 } from '../utils/connection';
 import { PrismaService } from 'nestjs-prisma';
 import { SphereService } from '../third-party/sphere/sphere.service';
-import { generateCommitment } from '../utils/hash';
 import {
   FEE_DESTINATION,
   FEE_USDC,
   MIN_COMPUTE_PRICE,
   TOKEN_ACCOUNT_FEE_USDC,
-  UPI_VPA_PREFIX,
   USDC_ADDRESS,
 } from '../constants';
 import {
@@ -47,18 +38,14 @@ import {
   TokenAccountNotFoundError,
   TokenInvalidAccountOwnerError,
 } from '@solana/spl-token';
-import { Currency } from '../types/payment';
 import { TokenType, TransferStatus } from '@prisma/client';
-import { ReceivePaymentParamsDto } from './dto/receive-payment-params.dto';
-import { encodeURL } from '@solana/pay';
-import BigNumber from 'bignumber.js';
 import { IndexerService } from '../indexer/indexer.service';
 import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
 TODO:
-  1. Add sphere widget
-  2. Add referral fee incentives
+  1. Add referral fee incentives
+  2. user incentives for shopping from listed stores only on the merchant profile
 */
 
 @Injectable()
@@ -73,56 +60,55 @@ export class PaymentService {
     this.connection = getConnection();
   }
 
-  async getReceiver(encodedQr: string): Promise<ReceiverBankingDetail> {
-    if (isSolanaAddress(encodedQr)) {
-      const walletAddress = encodedQr;
-      return {
-        vpa: '',
-        walletAddress,
-        name: '',
-        currency: Currency.USD,
-      };
-    }
-
-    const receiver = this.decodeQr(encodedQr);
-
-    const commitment = generateCommitment(receiver.vpa);
-
-    const registry = await this.prisma.keyWalletRegistry.findFirst({
-      where: { commitment, verification: { isNot: null } },
-      include: { user: { select: { wallet: { select: { address: true } } } } },
+  async getMerchantPaymentDetails(username: string) {
+    const receiver = await this.prisma.user.findUnique({
+      where: { username },
+      include: { merchant: true },
     });
 
-    if (!registry) {
+    if (!receiver) {
       throw new NotFoundException(
-        'Receiver have not registered the vpa, onboard them and earn points',
+        `User with username ${username} doesn't exist`,
       );
     }
 
-    return {
-      ...receiver,
-      vpa: receiver.vpa,
-      walletAddress: registry.user.wallet.address,
-    };
+    //TODO: Do we have user select the restraunt they are using to verify the Merchant QR ?
+    if (!receiver.merchant) {
+      throw new NotFoundException(
+        `User with username ${username} is not a merchant`,
+      );
+    }
+
+    const merchant = receiver.merchant;
+    if (!merchant.isVerified) {
+      throw new BadRequestException(
+        `Merchant ${merchant.displayName} is not verified`,
+      );
+    }
+
+    return merchant;
   }
 
   async createTransferRequest(query: TransferParams, userId: number) {
     try {
-      const { vpa, amount } = query;
+      const { username, amount } = query;
 
       const sender = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { wallet: { select: { address: true } } },
       });
 
-      const receiverWalletAddress = await this.resolveWalletAddress(vpa);
+      const receiver = await this.prisma.user.findUnique({
+        where: { username },
+        select: { wallet: { select: { address: true } } },
+      });
 
       // Construct transaction
       const referenceKey = Keypair.generate().publicKey;
       const senderWalletAddress = sender.wallet.address;
       const transaction = await this.constructDigitalTransferTransaction(
         senderWalletAddress,
-        receiverWalletAddress,
+        receiver.wallet.address,
         amount,
         referenceKey,
       );
@@ -133,9 +119,9 @@ export class PaymentService {
           senderWallet: { connect: { address: senderWalletAddress } },
           receiverWallet: {
             connectOrCreate: {
-              where: { address: receiverWalletAddress },
+              where: { address: receiver.wallet.address },
               create: {
-                address: receiverWalletAddress,
+                address: receiver.wallet.address,
                 lastInteractedAt: new Date(),
               },
             },
@@ -154,40 +140,6 @@ export class PaymentService {
         'Failed to initiate transfer request',
       );
     }
-  }
-
-  async createReceiveRequest(userId: number, query: ReceivePaymentParamsDto) {
-    const receiver = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { wallet: { select: { address: true } } },
-    });
-
-    // Construct transaction
-    const reference = Keypair.generate().publicKey;
-    const receiverWalletAddress = new PublicKey(receiver.wallet.address);
-    const splToken = new PublicKey(USDC_ADDRESS);
-    const amount = new BigNumber(query.amount);
-
-    const transfer = await this.prisma.transfer.create({
-      data: {
-        receiverWallet: { connect: { address: receiver.wallet.address } },
-        amount: query.amount,
-        status: TransferStatus.Pending,
-        tokenType: TokenType.USDC,
-        reference: reference.toString(),
-      },
-    });
-
-    const paymentUrl = encodeURL({
-      recipient: receiverWalletAddress,
-      amount,
-      splToken,
-      reference,
-      message: query.message,
-    });
-
-    this.indexerService.pollPayment(transfer);
-    return paymentUrl;
   }
 
   async getWalletBalance(walletAddress: string) {
@@ -396,120 +348,4 @@ export class PaymentService {
       throw new BadRequestException('Region not supported');
     }
   }
-
-  private async resolveWalletAddress(vpa: string) {
-    if (isSolanaAddress(vpa)) {
-      return vpa;
-    }
-
-    const commitment = generateCommitment(vpa);
-    const receiverRegistry = await this.prisma.keyWalletRegistry.findFirst({
-      where: { commitment, verification: { isNot: null } },
-      select: { user: { select: { wallet: { select: { address: true } } } } },
-    });
-
-    if (!receiverRegistry || !receiverRegistry.user.wallet?.address) {
-      throw new BadRequestException(
-        "Receiver either haven't got verified or registered. Get them register to earn rewards",
-      );
-    }
-
-    return receiverRegistry.user.wallet.address;
-  }
-
-  private decodeQr(encodedQr: string) {
-    const qr = decodeURIComponent(encodedQr);
-
-    if (this.isUPIQr(qr)) {
-      return this.parseUpiQr(qr);
-    } else if (this.isSEPAQr(qr)) {
-      return this.parseSEPAQr(qr);
-    }
-
-    throw new NotFoundException('Unsupported QR code');
-  }
-
-  /*
-        Example:
-        Uses EPC069-12 standard: 
-
-        BCD
-        001
-        1
-        SCT
-        SWIFT/BIC
-        <Receiver Name> 
-        HR09*******01
-        EUR1
-
-    */
-
-  private isSEPAQr(qr: string): boolean {
-    const sepaPattern = /^BCD\s*001\s*1\s*SCT/i;
-    return sepaPattern.test(qr);
-  }
-
-  private isUPIQr(qr: string): boolean {
-    return qr.startsWith(UPI_VPA_PREFIX);
-  }
-
-  private parseSEPAQr(qr: string): ReceiverQrDetails {
-    const sepaDetails = qr
-      .trimEnd()
-      .split('\n')
-      .map((detail) => detail.trim());
-
-    const iban = sepaDetails.at(6).trim();
-    const name = sepaDetails.at(5).trim();
-    const currency = sepaDetails.at(-1);
-
-    if (isNull(iban) || isNull(name) || isNull(currency)) {
-      throw new BadRequestException('Invalid Qr');
-    }
-
-    const cleanCurrency = getCurrencyValue(currency);
-    return {
-      vpa: iban,
-      name: name,
-      currency: cleanCurrency,
-    };
-  }
-
-  /*
-      Eg: upi://pay?pa=merchant@upi&pn=MerchantName&mc=1234&tid=123456&tr=123456789&tn=Payment&am=100.00&cu=INR
-  */
-  private parseUpiQr(qr: string): ReceiverQrDetails {
-    const qrUrl = new URL(qr);
-    const upiId = qrUrl.searchParams.get('pa');
-    const name = qrUrl.searchParams.get('pn');
-
-    if (isNull(upiId) || isNull(name)) {
-      throw new BadRequestException('Invalid Qr');
-    }
-
-    return {
-      vpa: upiId,
-      name,
-      currency: Currency.INR,
-    };
-  }
 }
-
-/* 
-PIX QR Data
-- use pix-utils to parse encoded qr 
-// {
-//   type: 'STATIC',
-//   merchantCategoryCode: '0000',
-//   transactionCurrency: '986',
-//   countryCode: 'BR',
-//   merchantName: 'Thales Ogliari',
-//   merchantCity: 'SAO MIGUEL DO O',
-//   pixKey: 'nubank@thalesog.com',
-//   transactionAmount: 1,
-//   infoAdicional: 'Gerado por Pix-Utils',
-//   txid: '***',
-//   toBRCode: [Function: toBRCode],
-//   toImage: [Function: toImage]
-// }
-*/

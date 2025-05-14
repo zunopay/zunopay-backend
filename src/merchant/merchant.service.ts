@@ -7,12 +7,13 @@ import { UpdateMerchantDto } from './dto/update-merchant.dto';
 export class MerchantService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(userId: number, body: RegisterMerchantDto) {
-    const isExists = await this.prisma.merchant.findUnique({
-      where: { userId },
+  async register(username: string, body: RegisterMerchantDto, referrerId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: { merchant: true }
     });
 
-    if (isExists) {
+    if(user.merchant){
       throw new BadRequestException(
         'Merchant profile already exists for the user',
       );
@@ -23,7 +24,7 @@ export class MerchantService {
         displayName: body.displayName,
         address: body.address,
         category: body.category,
-        user: { connect: { id: userId } },
+        user: { connect: { username } },
       },
     });
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { RegisterMerchantDto } from './dto/register-merchant.dto';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { MerchantService } from './merchant.service';
@@ -12,13 +12,14 @@ import { UpdateMerchantDto } from './dto/update-merchant.dto';
 export class MerchantController {
   constructor(private readonly merchantService: MerchantService) {}
 
-  @RolesGuard([Role.Admin])
-  @Post('/register')
+  @RolesGuard([Role.Member])
+  @Post('/register/:username')
   async register(
+    @Param('username') username: string,
     @Body() body: RegisterMerchantDto,
-    @UserEntity() user: UserPayload,
+    @UserEntity() referrer: UserPayload,
   ) {
-    const merchant = await this.merchantService.register(user.id, body);
+    const merchant = await this.merchantService.register(username, body, referrer.id);
     return toMerchantDto(merchant);
   }
 
@@ -26,15 +27,5 @@ export class MerchantController {
   async getMerchants() {
     const merchants = await this.merchantService.getMerchants();
     return toMerchantDtoArray(merchants);
-  }
-
-  @RolesGuard([Role.Admin])
-  @Patch('/update')
-  async update(
-    @Body() body: UpdateMerchantDto,
-    @UserEntity() user: UserPayload,
-  ) {
-    const merchant = await this.merchantService.update(user.id, body);
-    return toMerchantDto(merchant);
   }
 }
