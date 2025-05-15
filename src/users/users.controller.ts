@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserEntity } from 'src/decorators/user.decorator';
@@ -7,10 +7,7 @@ import { UserAuth } from '../guards/user-auth';
 import { toUserDto } from './dto/user.dto';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
-import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
-import { toConnectedVpaDto } from './dto/connected-vpa.dto';
-import { ConnectBankDto } from './dto/connect-bank.dto';
 
 @Controller('user')
 @ApiTags('User')
@@ -24,39 +21,16 @@ export class UserController {
     return toUserDto(me);
   }
 
-  @RolesGuard([Role.KycVerifier])
-  @Patch('/verify')
-  async verify(@UserEntity() user: UserPayload, @Body() body: VerifyUserDto) {
-    await this.userService.verifyVpa(user, body);
-  }
-
   @UserAuth()
   @Patch('/verify-email')
   async verifyEmail(@UserEntity() user: UserPayload) {
     await this.userService.verifyEmail(user.id);
   }
 
-  @UserAuth()
-  @Get('/get/vpa')
-  async getConnectedVpa(@UserEntity() user: UserPayload) {
-    const data = await this.userService.getConnectedVpa(user.id);
-    return toConnectedVpaDto(data);
-  }
-
-  @UserAuth()
-  @Patch('/connect-bank')
-  async connectBank(
-    @UserEntity() user: UserPayload,
-    @Body() body: ConnectBankDto,
-  ) {
-    const data = await this.userService.connectBank(user.id, body.vpa);
-    return toConnectedVpaDto(data);
-  }
-
   @RolesGuard([Role.Admin])
-  @Patch('/register/verifier/:username')
-  async registerVerifier(@Param('username') username: string) {
-    await this.userService.registerVerifier(username);
+  @Patch('/register/member/:username')
+  async registerMember(@Param('username') username: string) {
+    await this.userService.registerMember(username);
   }
 
   @UserAuth()
@@ -70,12 +44,5 @@ export class UserController {
   @Get('/get/reward-points')
   async getRewardPoints(@UserEntity() user: UserPayload): Promise<number> {
     return await this.userService.getUserPoints(user.id);
-  }
-
-  @RolesGuard([Role.Admin])
-  @Patch('/get/check')
-  async getCheck() {
-    const codes = await this.userService.getRefCodes();
-    return codes;
   }
 }

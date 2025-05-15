@@ -41,6 +41,7 @@ import {
 import { TokenType, TransferStatus } from '@prisma/client';
 import { IndexerService } from '../indexer/indexer.service';
 import { TransferHistoryInput, TransferType } from './dto/transfer-history';
+import { ReceiverInput } from './dto/receiver.dto';
 
 /*
 TODO:
@@ -62,10 +63,10 @@ export class PaymentService {
     this.connection = getConnection();
   }
 
-  async getMerchantPaymentDetails(username: string) {
+  async getReceiver(username: string) : Promise<ReceiverInput> {
     const receiver = await this.prisma.user.findUnique({
       where: { username },
-      include: { merchant: true },
+      include: { wallet: true },
     });
 
     if (!receiver) {
@@ -74,21 +75,7 @@ export class PaymentService {
       );
     }
 
-    //TODO: Do we have user select the restraunt they are using to verify the Merchant QR ?
-    if (!receiver.merchant) {
-      throw new NotFoundException(
-        `User with username ${username} is not a merchant`,
-      );
-    }
-
-    const merchant = receiver.merchant;
-    if (!merchant.isVerified) {
-      throw new BadRequestException(
-        `Merchant ${merchant.displayName} is not verified`,
-      );
-    }
-
-    return merchant;
+    return {...receiver, walletAddress: receiver.wallet.address};
   }
 
   async createTransferRequest(query: TransferParams, userId: number) {

@@ -10,16 +10,14 @@ import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
 import { GoogleUserPayload, UserPayload } from '../auth/dto/authorization.dto';
 import { AuthService } from '../auth/auth.service';
-import { generateCommitment, hashPassword } from '../utils/hash';
+import { hashPassword } from '../utils/hash';
 import { LoginDto } from './dto/login.dto';
 import { isEmail } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { PaymentService } from '../payment/payment.service';
-import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { WalletBalanceInput } from './dto/wallet-balance.dto';
 import { UserInput } from './dto/user.dto';
-import { ConnectedVpaInput } from './dto/connected-vpa.dto';
 import { WebhookService } from '../indexer/webhook/webhook.service';
 import { Currency } from '../types/payment';
 
@@ -102,7 +100,7 @@ export class UsersService {
   }
 
   async register(body: RegisterDto): Promise<User> {
-    const { email, password, username, region, role, referralCode } = body;
+    const { email, password, username, referralCode } = body;
 
     validateEmail(email);
 
@@ -124,7 +122,6 @@ export class UsersService {
           email: email.toLowerCase(),
           username: username.toLowerCase(),
           password: hashedPassword,
-          role: Role[role],
           emailVerifiedAt,
           referredBy: { connect: { code: referralCode } },
         },

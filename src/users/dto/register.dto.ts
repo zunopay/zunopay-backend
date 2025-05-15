@@ -1,11 +1,9 @@
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { SupportedRegion } from '@prisma/client';
 import {
   IsEmail,
   IsEnum,
   IsOptional,
   IsString,
-  IsStrongPassword,
   MinLength,
 } from 'class-validator';
 import { IsValidUsername } from '../../decorators/isValidUsername';
@@ -26,14 +24,6 @@ export class RegisterDto {
   @MinLength(8)
   @IsString()
   password: string;
-
-  @ApiProperty({ enum: SupportedRegion })
-  @IsEnum(SupportedRegion)
-  region: SupportedRegion;
-
-  @ApiProperty({ enum: AllowedRole })
-  @IsEnum(AllowedRole)
-  role: AllowedRole;
 
   @IsString()
   referralCode: string;
