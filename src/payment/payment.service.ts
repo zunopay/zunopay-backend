@@ -338,16 +338,7 @@ export class PaymentService {
 
       For automatic offramps, User smart accounts to transfer to offramp provider's intermediary wallet.
     */
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (user.region == 'EU') {
-      const offrampTransaction = await this.sphereService.offramp(
-        userId,
-        amount,
-      );
-      return offrampTransaction;
-    } else {
-      throw new BadRequestException('Region not supported');
-    }
+    const offrampTransaction = await this.sphereService.offramp(userId, amount);
+    return offrampTransaction;
   }
 }

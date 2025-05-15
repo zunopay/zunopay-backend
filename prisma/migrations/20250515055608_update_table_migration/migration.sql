@@ -2,14 +2,13 @@
   Warnings:
 
   - The values [InActive] on the enum `MerchantStatus` will be removed. If these variants are still used in the database, this will fail.
+  - The values [MerchantOnboarding] on the enum `RewardPointTask` will be removed. If these variants are still used in the database, this will fail.
   - The values [KycVerifier] on the enum `Role` will be removed. If these variants are still used in the database, this will fail.
-  - You are about to drop the column `refereeId` on the `ReferralCode` table. All the data in the column will be lost.
   - You are about to drop the column `nonce` on the `User` table. All the data in the column will be lost.
   - You are about to drop the column `region` on the `User` table. All the data in the column will be lost.
   - You are about to drop the `KeyWalletRegistry` table. If the table is not empty, all the data it contains will be lost.
   - You are about to drop the `KycVerifier` table. If the table is not empty, all the data it contains will be lost.
   - You are about to drop the `UserKycVerification` table. If the table is not empty, all the data it contains will be lost.
-  - A unique constraint covering the columns `[merchantId]` on the table `ReferralCode` will be added. If there are existing duplicate values, this will fail.
 
 */
 -- AlterEnum
@@ -21,6 +20,15 @@ ALTER TYPE "MerchantStatus" RENAME TO "MerchantStatus_old";
 ALTER TYPE "MerchantStatus_new" RENAME TO "MerchantStatus";
 DROP TYPE "MerchantStatus_old";
 ALTER TABLE "Merchant" ALTER COLUMN "status" SET DEFAULT 'Unverified';
+COMMIT;
+
+-- AlterEnum
+BEGIN;
+CREATE TYPE "RewardPointTask_new" AS ENUM ('StoreOnboarding', 'EarlyUser', 'UserReferred');
+ALTER TABLE "RewardPointSystem" ALTER COLUMN "task" TYPE "RewardPointTask_new" USING ("task"::text::"RewardPointTask_new");
+ALTER TYPE "RewardPointTask" RENAME TO "RewardPointTask_old";
+ALTER TYPE "RewardPointTask_new" RENAME TO "RewardPointTask";
+DROP TYPE "RewardPointTask_old";
 COMMIT;
 
 -- AlterEnum
@@ -41,23 +49,13 @@ ALTER TABLE "KeyWalletRegistry" DROP CONSTRAINT "KeyWalletRegistry_userId_fkey";
 ALTER TABLE "KycVerifier" DROP CONSTRAINT "KycVerifier_userId_fkey";
 
 -- DropForeignKey
-ALTER TABLE "ReferralCode" DROP CONSTRAINT "ReferralCode_refereeId_fkey";
-
--- DropForeignKey
 ALTER TABLE "UserKycVerification" DROP CONSTRAINT "UserKycVerification_registryId_fkey";
 
 -- DropForeignKey
 ALTER TABLE "UserKycVerification" DROP CONSTRAINT "UserKycVerification_verifierId_fkey";
 
--- DropIndex
-DROP INDEX "ReferralCode_refereeId_key";
-
 -- AlterTable
 ALTER TABLE "Merchant" ALTER COLUMN "status" SET DEFAULT 'Unverified';
-
--- AlterTable
-ALTER TABLE "ReferralCode" DROP COLUMN "refereeId",
-ADD COLUMN     "merchantId" INTEGER;
 
 -- AlterTable
 ALTER TABLE "User" DROP COLUMN "nonce",
@@ -74,9 +72,3 @@ DROP TABLE "UserKycVerification";
 
 -- DropEnum
 DROP TYPE "SupportedRegion";
-
--- CreateIndex
-CREATE UNIQUE INDEX "ReferralCode_merchantId_key" ON "ReferralCode"("merchantId");
-
--- AddForeignKey
-ALTER TABLE "ReferralCode" ADD CONSTRAINT "ReferralCode_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE SET NULL ON UPDATE CASCADE;

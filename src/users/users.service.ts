@@ -18,10 +18,10 @@ import { PaymentService } from '../payment/payment.service';
 import { VerifyUserDto } from './dto/verifiy-user.dto';
 import { PrivyService } from '../third-party/privy/privy.service';
 import { WalletBalanceInput } from './dto/wallet-balance.dto';
-import { RegionToCurrency } from 'src/utils/payments';
 import { UserInput } from './dto/user.dto';
 import { ConnectedVpaInput } from './dto/connected-vpa.dto';
-import { WebhookService } from 'src/indexer/webhook/webhook.service';
+import { WebhookService } from '../indexer/webhook/webhook.service';
+import { Currency } from '../types/payment';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +29,7 @@ export class UsersService {
    * Onboarding flow:
    *
    * 1. Perform checks
-   * 2. Create wallet and vpa commitment
+   * 2. Create wallet
    * 3. Register
    *
    * -- Only when offramping.
@@ -51,7 +51,7 @@ export class UsersService {
   async getBalance(userId: number): Promise<WalletBalanceInput> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { wallet: { select: { address: true } }, region: true },
+      select: { wallet: { select: { address: true } } },
     });
 
     if (!user.wallet) {
@@ -63,7 +63,7 @@ export class UsersService {
     );
 
     // TODO: Convert usdc balance to correct currency
-    return { balance, currency: RegionToCurrency[user.region] };
+    return { balance, currency: Currency.USD };
   }
 
   async findOneById(id: number) {
@@ -73,19 +73,14 @@ export class UsersService {
   async fetchMe(id: number): Promise<UserInput> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: {
-        registry: { select: { verification: true } },
-        wallet: { select: { address: true } },
-      },
+      include: { wallet: { select: { address: true } } },
     });
 
     if (!user) throw new Error('User not found');
 
-    const { registry, ...rest } = user;
     return {
-      ...rest,
-      verification: !!registry?.verification,
-      walletAddress: rest?.wallet?.address,
+      ...user,
+      walletAddress: user?.wallet?.address,
     };
   }
 
@@ -93,22 +88,16 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
-  async registerVerifier(username: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { username },
-      include: { verifier: true },
-    });
+  async registerMember(username: string) {
+    const user = await this.prisma.user.findUnique({ where: { username } });
 
-    if (user.verifier) {
-      throw new BadRequestException(' User is already a verifier ');
+    if (user.role == Role.Member) {
+      throw new BadRequestException('User is already a member');
     }
 
     await this.prisma.user.update({
       where: { username },
-      data: {
-        role: Role.KycVerifier,
-        verifier: { create: { createdAt: new Date() } },
-      },
+      data: { role: Role.Member },
     });
   }
 
@@ -135,7 +124,6 @@ export class UsersService {
           email: email.toLowerCase(),
           username: username.toLowerCase(),
           password: hashedPassword,
-          region,
           role: Role[role],
           emailVerifiedAt,
           referredBy: { connect: { code: referralCode } },
@@ -145,7 +133,6 @@ export class UsersService {
       return user;
     });
 
-    await this.rewardUser(user.id, RewardPointTask.EarlyUser);
     return user;
   }
 
@@ -231,7 +218,7 @@ export class UsersService {
       walletAddress = walletUser.wallet?.address;
     }
 
-    await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         emailVerifiedAt: new Date(),
@@ -242,96 +229,15 @@ export class UsersService {
           },
         },
       },
+      include: { referredBy: true },
     });
+
+    this.rewardUser(updatedUser.id, RewardPointTask.EarlyUser);
+    this.rewardUser(
+      updatedUser.referredBy.referrerId,
+      RewardPointTask.UserReferred,
+    );
     this.webhookService.subscribeTo(walletAddress);
-  }
-
-  async getConnectedVpa(userId: number) {
-    const registry = await this.prisma.keyWalletRegistry.findUnique({
-      where: { userId },
-      include: { verification: true },
-    });
-
-    if (!registry) {
-      throw new NotFoundException("User doesn't have VPA connected to wallet");
-    }
-
-    return {
-      vpa: registry.vpa,
-      verification: !!registry.verification,
-    };
-  }
-
-  async connectBank(userId: number, vpa: string): Promise<ConnectedVpaInput> {
-    const commitment = generateCommitment(vpa);
-
-    // check if verified vpa already exists
-    const registry = await this.prisma.keyWalletRegistry.findFirst({
-      where: { commitment, verification: { isNot: null } },
-    });
-
-    const isCommitmentExists = !!registry;
-    if (isCommitmentExists) {
-      throw new BadRequestException(
-        'Payment address already exists, use different payment address for this account. Contact us if not you',
-      );
-    }
-
-    const updatedRegistry = await this.prisma.keyWalletRegistry.upsert({
-      where: { userId },
-      update: { commitment, vpa },
-      create: { commitment, vpa, user: { connect: { id: userId } } },
-    });
-
-    return { vpa: updatedRegistry.vpa, verification: false };
-  }
-
-  async verifyVpa(kycVerifier: UserPayload, body: VerifyUserDto) {
-    const { vpa, username } = body;
-
-    const user = await this.prisma.user.findUnique({
-      where: { username },
-      include: { registry: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User does not exist');
-    }
-
-    if (!user.emailVerifiedAt) {
-      throw new BadRequestException('User email is not verified');
-    }
-
-    const verifierData = await this.prisma.kycVerifier.findUnique({
-      where: { userId: kycVerifier.id },
-    });
-
-    if (!verifierData || verifierData?.deletedAt) {
-      throw new UnauthorizedException();
-    }
-
-    const commitment = generateCommitment(vpa);
-
-    if (!user.registry || user.registry.commitment !== commitment) {
-      throw new BadRequestException("Virtual private address doesn't match");
-    }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        registry: {
-          update: {
-            verification: {
-              create: {
-                verifier: { connect: { id: verifierData.id } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    await this.rewardUser(kycVerifier.id, RewardPointTask.MerchantOnboarding);
   }
 
   async rewardUser(userId: number, task: RewardPointTask) {
@@ -361,11 +267,3 @@ export class UsersService {
     return refCodes;
   }
 }
-
-/**
- * 1. Return currency in local value as per region
- * 2. Generate the QR as per region
- * 3.
- *
- *
- */

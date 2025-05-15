@@ -36,6 +36,7 @@ model User {
   offrampProviders UserOfframpProvider[]
   createdAt        DateTime              @default(now())
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
+  referredBy       ReferralCode?         @relation("ReferredUser")
   points           UserRewardPoints[]
   merchant         Merchant?
 }
@@ -50,7 +51,6 @@ model Merchant {
   user        User             @relation(fields: [userId], references: [id])
   isVerified  Boolean          @default(false)
   status      MerchantStatus   @default(Unverified)
-  referredBy  ReferralCode?    @relation("ReferredMerchant")
 }
 
 enum MerchantCategory {
@@ -68,11 +68,11 @@ model Wallet {
 }
 
 model ReferralCode {
-  code       String    @unique
+  code       String @unique
   referrerId Int
-  referrer   User      @relation("ReferrerCodes", fields: [referrerId], references: [id])
-  merchantId Int?      @unique
-  merchant   Merchant? @relation("ReferredMerchant", fields: [merchantId], references: [id])
+  referrer   User   @relation("ReferrerCodes", fields: [referrerId], references: [id])
+  refereeId  Int?   @unique
+  referee    User?  @relation("ReferredUser", fields: [refereeId], references: [id])
 }
 
 enum OfframpProvider {
@@ -117,8 +117,9 @@ model Transfer {
 }
 
 enum RewardPointTask {
-  MerchantOnboarding
+  StoreOnboarding
   EarlyUser
+  UserReferred
 }
 
 model RewardPointSystem {

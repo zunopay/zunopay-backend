@@ -2,16 +2,19 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { RegisterMerchantDto } from './dto/register-merchant.dto';
 import { PrismaService } from 'nestjs-prisma';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { RewardPointTask } from '@prisma/client';
+
+/**
+ *
+ * 1. Make point system decentivise wrong behaviours by members
+ *
+ */
 
 @Injectable()
 export class MerchantService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(
-    username: string,
-    body: RegisterMerchantDto,
-    referrerId: number,
-  ) {
+  async register(username: string, body: RegisterMerchantDto) {
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: { merchant: true },
@@ -38,13 +41,11 @@ export class MerchantService {
   async verify(username: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { merchant: true },
+      include: { merchant: true, referredBy: true },
     });
 
-    if (user.merchant) {
-      throw new BadRequestException(
-        'Merchant profile already exists for the user',
-      );
+    if (!user.merchant) {
+      throw new BadRequestException(`User doesn't have merchant profile`);
     }
 
     const merchant = await this.prisma.merchant.update({
@@ -52,6 +53,10 @@ export class MerchantService {
       data: { isVerified: true },
     });
 
+    this.rewardUser(
+      user.referredBy.referrerId,
+      RewardPointTask.StoreOnboarding,
+    );
     return merchant;
   }
 
@@ -74,5 +79,14 @@ export class MerchantService {
     });
 
     return merchant;
+  }
+
+  async rewardUser(userId: number, task: RewardPointTask) {
+    await this.prisma.userRewardPoints.create({
+      data: {
+        user: { connect: { id: userId } },
+        reward: { connect: { task } },
+      },
+    });
   }
 }
