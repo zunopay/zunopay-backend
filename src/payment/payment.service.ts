@@ -44,8 +44,10 @@ import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 
 /*
 TODO:
-  1. Add referral fee incentives
-  2. user incentives for shopping from listed stores only on the merchant profile
+  1. Google signup creates wallet and gives a random username
+  2. profile page with way to change username
+  3. Add referral fee incentives
+  4. user incentives for shopping from listed stores only on the merchant profile
 */
 
 @Injectable()

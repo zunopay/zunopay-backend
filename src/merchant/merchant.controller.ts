@@ -19,7 +19,11 @@ export class MerchantController {
     @Body() body: RegisterMerchantDto,
     @UserEntity() referrer: UserPayload,
   ) {
-    const merchant = await this.merchantService.register(username, body, referrer.id);
+    const merchant = await this.merchantService.register(
+      username,
+      body,
+      referrer.id,
+    );
     return toMerchantDto(merchant);
   }
 
@@ -27,5 +31,12 @@ export class MerchantController {
   async getMerchants() {
     const merchants = await this.merchantService.getMerchants();
     return toMerchantDtoArray(merchants);
+  }
+
+  @RolesGuard([Role.Admin])
+  @Patch('/verify/:username')
+  async verify(@Param('username') username: string) {
+    const merchant = await this.merchantService.verify(username);
+    return merchant;
   }
 }
