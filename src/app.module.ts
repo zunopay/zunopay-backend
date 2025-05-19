@@ -13,7 +13,7 @@ import { PassportModule } from '@nestjs/passport';
 import { PrivyModule } from './third-party/privy/privy.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { WebhookModule } from './indexer/webhook/webhook.module';
-import { MerchantModule } from './merchant/merchant.module';
+import { ShopModule } from './shop/shop.module';
 
 @Module({
   imports: [
@@ -47,7 +47,7 @@ import { MerchantModule } from './merchant/merchant.module';
     PrivyModule,
     IndexerModule,
     WebhookModule,
-    MerchantModule,
+    ShopModule,
   ],
   controllers: [AppController],
   providers: [AppService],

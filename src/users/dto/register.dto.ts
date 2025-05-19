@@ -1,17 +1,11 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { OmitType } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { IsValidUsername } from '../../decorators/isValidUsername';
-
-enum AllowedRole {
-  Merchant = 'Merchant',
-  Individual = 'Individual',
-}
 
 export class RegisterDto {
   @IsOptional()

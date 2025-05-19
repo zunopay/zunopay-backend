@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { RegisterMerchantDto } from './dto/register-merchant.dto';
+import { RegisterShopDto } from './dto/register-shop.dto';
 import { PrismaService } from 'nestjs-prisma';
-import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { UpdateShopDto } from './dto/update-shop.dto';
 import { RewardPointTask } from '@prisma/client';
 
 /**
@@ -11,22 +11,22 @@ import { RewardPointTask } from '@prisma/client';
  */
 
 @Injectable()
-export class MerchantService {
+export class ShopService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(username: string, body: RegisterMerchantDto) {
+  async register(username: string, body: RegisterShopDto) {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { merchant: true },
+      include: { shop: true },
     });
 
-    if (user.merchant) {
+    if (user.shop) {
       throw new BadRequestException(
-        'Merchant profile already exists for the user',
+        'User already has a registered shop',
       );
     }
 
-    const merchant = await this.prisma.merchant.create({
+    const shop = await this.prisma.shop.create({
       data: {
         displayName: body.displayName,
         address: body.address,
@@ -35,41 +35,41 @@ export class MerchantService {
       },
     });
 
-    return merchant;
+    return shop;
   }
 
   async verify(username: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { merchant: true, referredBy: true },
+      include: { shop: true, referredBy: true },
     });
 
-    if (!user.merchant) {
-      throw new BadRequestException(`User doesn't have merchant profile`);
+    if (!user.shop) {
+      throw new BadRequestException(`User is not a merchant`);
     }
 
-    const merchant = await this.prisma.merchant.update({
-      where: { id: user.merchant.id },
+    const shop = await this.prisma.shop.update({
+      where: { id: user.shop.id },
       data: { isVerified: true },
     });
 
     this.rewardUser(
       user.referredBy.referrerId,
-      RewardPointTask.StoreOnboarding,
+      RewardPointTask.ShopOnboarding,
     );
-    return merchant;
+    return shop;
   }
 
   // TODO: Add filters
-  async getMerchants() {
-    const merchants = await this.prisma.merchant.findMany({
+  async getShops() {
+    const shops = await this.prisma.shop.findMany({
       where: { isVerified: true },
     });
-    return merchants;
+    return shops;
   }
 
-  async update(userId: number, body: UpdateMerchantDto) {
-    const merchant = await this.prisma.merchant.update({
+  async update(userId: number, body: UpdateShopDto) {
+    const shop = await this.prisma.shop.update({
       where: { userId },
       data: {
         displayName: body.displayName,
@@ -78,7 +78,7 @@ export class MerchantService {
       },
     });
 
-    return merchant;
+    return shop;
   }
 
   async rewardUser(userId: number, task: RewardPointTask) {
