@@ -19,7 +19,7 @@ export function toReceiverDto(input: ReceiverInput) {
   const plainReceiverDto: ReceiverDto = {
     username: input.username,
     walletAddress: input.walletAddress,
-    avatar: input.avatar
+    avatar: input.avatar,
   };
 
   const receiverDto = plainToInstance(ReceiverDto, plainReceiverDto);

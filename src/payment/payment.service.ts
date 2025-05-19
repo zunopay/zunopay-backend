@@ -63,7 +63,7 @@ export class PaymentService {
     this.connection = getConnection();
   }
 
-  async getReceiver(username: string) : Promise<ReceiverInput> {
+  async getReceiver(username: string): Promise<ReceiverInput> {
     const receiver = await this.prisma.user.findUnique({
       where: { username },
       include: { wallet: true },
@@ -75,7 +75,7 @@ export class PaymentService {
       );
     }
 
-    return {...receiver, walletAddress: receiver.wallet.address};
+    return { ...receiver, walletAddress: receiver.wallet.address };
   }
 
   async createTransferRequest(query: TransferParams, userId: number) {

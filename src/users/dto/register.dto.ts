@@ -1,10 +1,5 @@
 import { OmitType } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 import { IsValidUsername } from '../../decorators/isValidUsername';
 
 export class RegisterDto {

@@ -21,9 +21,7 @@ export class ShopService {
     });
 
     if (user.shop) {
-      throw new BadRequestException(
-        'User already has a registered shop',
-      );
+      throw new BadRequestException('User already has a registered shop');
     }
 
     const shop = await this.prisma.shop.create({
@@ -53,10 +51,7 @@ export class ShopService {
       data: { isVerified: true },
     });
 
-    this.rewardUser(
-      user.referredBy.referrerId,
-      RewardPointTask.ShopOnboarding,
-    );
+    this.rewardUser(user.referredBy.referrerId, RewardPointTask.ShopOnboarding);
     return shop;
   }
 

@@ -103,6 +103,8 @@ export class UsersService {
     const { email, password, username, referralCode } = body;
 
     validateEmail(email);
+    await this.checkIfUsernameTaken(username);
+    await this.checkIfEmailTaken(email);
 
     const hashedPassword = await hashPassword(password);
     const emailVerifiedAt = !password ? new Date() : undefined;
@@ -114,7 +116,7 @@ export class UsersService {
 
       const isReferralCodeAvailable = refCode && !refCode.refereeId;
       if (!isReferralCodeAvailable) {
-        throw new BadRequestException(' Referral code is not available ');
+        throw new BadRequestException('Referral code is not available');
       }
 
       const user = await tx.user.create({
@@ -262,5 +264,23 @@ export class UsersService {
       where: { refereeId: null },
     });
     return refCodes;
+  }
+
+  async checkIfUsernameTaken(username: string) {
+    const isUserExists = await this.prisma.user.findUnique({
+      where: { username },
+    });
+    if (isUserExists) {
+      throw new BadRequestException(`username ${username} is already taken`);
+    }
+  }
+
+  async checkIfEmailTaken(email: string) {
+    const isUserExists = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (isUserExists) {
+      throw new BadRequestException(`email ${email} is already in use`);
+    }
   }
 }
