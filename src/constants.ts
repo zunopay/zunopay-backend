@@ -10,6 +10,10 @@ export const USDC_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 export const FEE_DESTINATION = '7SMfVRrJw75vPzHCQ3ckUCT9igMRre8VHmodTbaVv4R';
 export const USDC_DECIMALS = 6;
 export const FEE_USDC = 1200;
+export const BUYER_DISCOUNT_FEE_BASIS_POINTS = 150;
+export const PLATFORM_FEE_BASIS_POINTS = 50;
+export const REFERRAL_FEE_BASIS_POINTS = 100;
+
 export const TOKEN_ACCOUNT_FEE_USDC = 500000;
 
 //QR Constants

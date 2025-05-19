@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -25,6 +24,8 @@ import {
   FEE_DESTINATION,
   FEE_USDC,
   MIN_COMPUTE_PRICE,
+  PLATFORM_FEE_BASIS_POINTS,
+  REFERRAL_FEE_BASIS_POINTS,
   TOKEN_ACCOUNT_FEE_USDC,
   USDC_ADDRESS,
 } from '../constants';
@@ -38,7 +39,7 @@ import {
   TokenAccountNotFoundError,
   TokenInvalidAccountOwnerError,
 } from '@solana/spl-token';
-import { TokenType, TransferStatus } from '@prisma/client';
+import { Role, TokenType, TransferStatus } from '@prisma/client';
 import { IndexerService } from '../indexer/indexer.service';
 import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 import { ReceiverInput } from './dto/receiver.dto';
@@ -89,8 +90,22 @@ export class PaymentService {
 
       const receiver = await this.prisma.user.findUnique({
         where: { username },
-        select: { wallet: { select: { address: true } } },
+        select: {
+          wallet: { select: { address: true } },
+          role: true,
+          referredBy: true,
+        },
       });
+
+      const isMerchant = receiver.role == Role.Merchant;
+      let referrerWalletAddress: string;
+      if (isMerchant) {
+        const referrer = await this.prisma.user.findUnique({
+          where: { id: receiver.referredBy.referrerId },
+          select: { wallet: { select: { address: true } } },
+        });
+        referrerWalletAddress = referrer.wallet.address;
+      }
 
       // Construct transaction
       const referenceKey = Keypair.generate().publicKey;
@@ -100,6 +115,7 @@ export class PaymentService {
         receiver.wallet.address,
         amount,
         referenceKey,
+        referrerWalletAddress,
       );
 
       const reference = referenceKey.toString();
@@ -241,6 +257,7 @@ export class PaymentService {
     receiver: string,
     amount: number,
     reference: PublicKey,
+    referrerWalletAddress?: string,
   ) {
     const mint = new PublicKey(USDC_ADDRESS);
     const sourceOwner = new PublicKey(sender);
@@ -262,26 +279,7 @@ export class PaymentService {
       transferFeeWallet,
     );
 
-    const transferFeeInstruction = createTransferInstruction(
-      source,
-      transferFeeWalletTokenAddress,
-      sourceOwner,
-      transferFee,
-    );
-
-    const transferToDestinationInstruction = createTransferInstruction(
-      source,
-      destination,
-      sourceOwner,
-      amount,
-    );
-
-    /* Add reference key for polling the transaction confirmation */
-    transferToDestinationInstruction.keys.push({
-      pubkey: reference,
-      isSigner: false,
-      isWritable: false,
-    });
+    const isMerchant = !!referrerWalletAddress;
 
     const computeBudgetInstruction = ComputeBudgetProgram.setComputeUnitPrice({
       microLamports: MIN_COMPUTE_PRICE,
@@ -291,6 +289,59 @@ export class PaymentService {
     let transaction = new Transaction({ ...latestBlockhash, feePayer }).add(
       computeBudgetInstruction,
     );
+
+    // Create and add transfer instructions
+    const transferFeeInstruction = createTransferInstruction(
+      source,
+      transferFeeWalletTokenAddress,
+      sourceOwner,
+      transferFee,
+    );
+
+    let platformFee = 0,
+      referralFee = 0;
+
+    if (isMerchant) {
+      const referrer = new PublicKey(referrerWalletAddress);
+      const { instruction: createReferrerTokenAccountInstruction } =
+        await this.getTokenAccountOrCreateInstruction(referrer, mint);
+
+      platformFee = (PLATFORM_FEE_BASIS_POINTS * amount) / 10000;
+      const createTransferToPlatform = createTransferInstruction(
+        source,
+        transferFeeWalletTokenAddress,
+        sourceOwner,
+        platformFee,
+      );
+
+      transaction = transaction.add(createTransferToPlatform);
+
+      if (!createReferrerTokenAccountInstruction) {
+        referralFee = (REFERRAL_FEE_BASIS_POINTS * amount) / 10000;
+        const createTransferToReferrer = createTransferInstruction(
+          source,
+          referrer,
+          sourceOwner,
+          referralFee,
+        );
+        transaction = transaction.add(createTransferToReferrer);
+      }
+    }
+
+    const amountAfterFees = amount - (platformFee + referralFee);
+    const transferToDestinationInstruction = createTransferInstruction(
+      source,
+      destination,
+      sourceOwner,
+      amountAfterFees,
+    );
+
+    /* Add reference key for polling the transaction confirmation */
+    transferToDestinationInstruction.keys.push({
+      pubkey: reference,
+      isSigner: false,
+      isWritable: false,
+    });
 
     if (createSourceTokenAccount) {
       transaction = transaction.add(createSourceTokenAccount);
