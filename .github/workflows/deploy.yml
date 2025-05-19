@@ -74,7 +74,7 @@ jobs:
       
             echo "Pulling the latest Docker image from GitHub CR..."
             docker pull ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
-      
+
             echo "Running Docker container..."
             docker run -d \
               --env "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
@@ -87,3 +87,6 @@ jobs:
               --env "TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }}" \
               --env "TREASURY_SECRET=${{ secrets.TREASURY_SECRET }}" \
               --name ${{ env.REPOSITORY }} -p 3005:3005 ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
+
+            echo "Cleaning up dangling Docker images that are 12 hours older"
+            docker image prune --filter "until=12h" -f
