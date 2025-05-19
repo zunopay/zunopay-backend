@@ -10,11 +10,11 @@ datasource db {
 enum Role {
   Admin
   Member
-  Indiviual
+  Individual
   Merchant
 }
 
-enum MerchantStatus {
+enum ShopStatus {
   Active
   Unverified
   Upcoming
@@ -27,7 +27,7 @@ model User {
   password         String
   username         String                @unique
   avatar           String                @default("")
-  role             Role                  @default(Indiviual)
+  role             Role                  @default(Individual)
   deletedAt        DateTime?
   lastLogin        DateTime?
   lastActiveAt     DateTime?
@@ -38,22 +38,22 @@ model User {
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
   points           UserRewardPoints[]
-  merchant         Merchant?
+  shop             Shop?
 }
 
-model Merchant {
-  id          Int              @id @default(autoincrement())
+model Shop {
+  id          Int          @id @default(autoincrement())
   displayName String
-  logo        String           @default("")
+  logo        String       @default("")
   address     String
-  category    MerchantCategory
-  userId      Int              @unique
-  user        User             @relation(fields: [userId], references: [id])
-  isVerified  Boolean          @default(false)
-  status      MerchantStatus   @default(Unverified)
+  category    ShopCategory
+  userId      Int          @unique
+  user        User         @relation(fields: [userId], references: [id])
+  isVerified  Boolean      @default(false)
+  status      ShopStatus   @default(Unverified)
 }
 
-enum MerchantCategory {
+enum ShopCategory {
   Restraunt
   Groceries
 }
@@ -117,7 +117,7 @@ model Transfer {
 }
 
 enum RewardPointTask {
-  StoreOnboarding
+  ShopOnboarding
   EarlyUser
   UserReferred
 }

@@ -14,7 +14,7 @@ export class AuthController {
     private readonly authService: AuthService,
   ) {}
 
-  @Post('user/register')
+  @Post('/register')
   async register(@Body() body: RegisterDto): Promise<Authorization> {
     const user = await this.userService.register(body);
     return this.authService.authorizeUser(user);
