@@ -14,6 +14,7 @@ import { PrivyModule } from './third-party/privy/privy.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { WebhookModule } from './indexer/webhook/webhook.module';
 import { ShopModule } from './shop/shop.module';
+import { S3Module } from './third-party/s3/s3.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ShopModule } from './shop/shop.module';
     IndexerModule,
     WebhookModule,
     ShopModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],

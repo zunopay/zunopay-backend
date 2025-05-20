@@ -1,3 +1,4 @@
+import { AwsCredentialIdentity } from '@aws-sdk/types';
 export interface Config {
   client: ClientConfig;
   nest: NestConfig;
@@ -6,6 +7,7 @@ export interface Config {
   security: SecurityConfig;
   googleAuth: GoogleAuthConfig;
   spherePayAuth: SpherePayConfig;
+  s3: S3Configuration;
 }
 
 export interface ClientConfig {
@@ -43,4 +45,11 @@ interface GoogleAuthConfig {
 
 interface SpherePayConfig {
   token: string;
+}
+
+interface S3Configuration {
+  region: string;
+  bucket: string;
+  cdn?: string;
+  credentials: AwsCredentialIdentity;
 }

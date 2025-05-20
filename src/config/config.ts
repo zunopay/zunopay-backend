@@ -31,6 +31,14 @@ export const CONFIG: Config = {
   spherePayAuth: {
     token: process.env.SPHERE_API_KEY ?? '',
   },
+  s3: {
+    bucket: process.env.AWS_BUCKET_NAME,
+    region: process.env.AWS_BUCKET_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  },
 };
 
 export default (): Config => CONFIG;
