@@ -22,7 +22,7 @@ async function main() {
   console.info('Added users');
 
   // SEED REWARD SYSTEM
-  await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.MerchantOnboarding, points: 5 } })
+  await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.ShopOnboarding, points: 5 } })
   await prisma.rewardPointSystem.create({ data: { task: RewardPointTask.EarlyUser, points: 1 } })
 
 }

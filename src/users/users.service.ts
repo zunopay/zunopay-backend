@@ -20,6 +20,7 @@ import { WalletBalanceInput } from './dto/wallet-balance.dto';
 import { UserInput } from './dto/user.dto';
 import { WebhookService } from '../indexer/webhook/webhook.service';
 import { Currency } from '../types/payment';
+import { appendTimestamp } from 'src/utils/general';
 
 @Injectable()
 export class UsersService {
@@ -126,6 +127,7 @@ export class UsersService {
           password: hashedPassword,
           emailVerifiedAt,
           referredBy: { connect: { code: referralCode } },
+          s3BucketSlug: appendTimestamp(username.toLowerCase()),
         },
       });
 

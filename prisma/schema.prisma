@@ -35,6 +35,7 @@ model User {
   wallet           Wallet?
   offrampProviders UserOfframpProvider[]
   createdAt        DateTime              @default(now())
+  s3BucketSlug     String                @unique
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
   points           UserRewardPoints[]
@@ -42,15 +43,19 @@ model User {
 }
 
 model Shop {
-  id          Int          @id @default(autoincrement())
-  displayName String
-  logo        String       @default("")
-  address     String
-  category    ShopCategory
-  userId      Int          @unique
-  user        User         @relation(fields: [userId], references: [id])
-  isVerified  Boolean      @default(false)
-  status      ShopStatus   @default(Unverified)
+  id           Int          @id @default(autoincrement())
+  displayName  String
+  slug         String
+  logo         String       @default("")
+  shopFront    String
+  taxNumber    String
+  address      String
+  category     ShopCategory
+  userId       Int          @unique
+  user         User         @relation(fields: [userId], references: [id])
+  isVerified   Boolean      @default(false)
+  status       ShopStatus   @default(Unverified)
+  s3BucketSlug String       @unique
 }
 
 enum ShopCategory {

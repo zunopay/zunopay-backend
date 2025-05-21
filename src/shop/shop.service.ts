@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { RegisterShopDto } from './dto/register-shop.dto';
 import { PrismaService } from 'nestjs-prisma';
 import { UpdateShopDto } from './dto/update-shop.dto';
-import { RewardPointTask } from '@prisma/client';
+import { RewardPointTask, Role } from '@prisma/client';
+import { S3Service } from '../third-party/s3/s3.service';
+import { appendTimestamp } from '../utils/general';
+import { kebabCase } from 'lodash';
 
 /**
  *
@@ -10,13 +17,21 @@ import { RewardPointTask } from '@prisma/client';
  *
  */
 
+function getS3Folder(userSlug: string, shopSlug: string) {
+  return `user/${userSlug}/shop/${shopSlug}`;
+}
+
 @Injectable()
 export class ShopService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3: S3Service,
+  ) {}
 
-  async register(username: string, body: RegisterShopDto) {
+  async register(userId: number, body: RegisterShopDto) {
+    const { logo, shopFront, taxNumber, displayName, category, address } = body;
     const user = await this.prisma.user.findUnique({
-      where: { username },
+      where: { id: userId },
       include: { shop: true },
     });
 
@@ -24,16 +39,41 @@ export class ShopService {
       throw new BadRequestException('User already has a registered shop');
     }
 
-    const shop = await this.prisma.shop.create({
+    const slug = kebabCase(displayName);
+    const s3BucketSlug = appendTimestamp(slug);
+
+    let logoKey: string, shopFrontKey: string;
+    const s3Folder = getS3Folder(user.s3BucketSlug, s3BucketSlug);
+
+    if (logo) {
+      logoKey = await this.s3.uploadFile(logo, { s3Folder });
+    }
+
+    if (shopFront) {
+      shopFrontKey = await this.s3.uploadFile(shopFront, { s3Folder });
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
       data: {
-        displayName: body.displayName,
-        address: body.address,
-        category: body.category,
-        user: { connect: { username } },
+        role: Role.Merchant,
+        shop: {
+          create: {
+            displayName: displayName,
+            slug,
+            taxNumber: taxNumber,
+            address: address,
+            category: category,
+            logo: logoKey,
+            shopFront: shopFrontKey,
+            s3BucketSlug,
+          },
+        },
       },
+      include: { shop: true },
     });
 
-    return shop;
+    return updatedUser.shop;
   }
 
   async verify(username: string) {
@@ -64,16 +104,47 @@ export class ShopService {
   }
 
   async update(userId: number, body: UpdateShopDto) {
-    const shop = await this.prisma.shop.update({
+    const { logo, shopFront, ...rest } = body;
+
+    const shop = await this.prisma.shop.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException(`User doesn't have a registered shop`);
+    }
+
+    let logoKey: string, shopFrontKey: string, slug: string;
+    const s3Folder = getS3Folder(shop.user.s3BucketSlug, shop.s3BucketSlug);
+
+    if (logo) {
+      logoKey = await this.s3.uploadFile(logo, { s3Folder });
+    }
+
+    if (shopFront) {
+      shopFrontKey = await this.s3.uploadFile(shopFront, { s3Folder });
+    }
+
+    if (rest.displayName) {
+      slug = kebabCase(rest.displayName);
+    }
+
+    // Re verify the details if important info is changed
+    const isVerified = !(rest.address || rest.taxNumber) && shop.isVerified;
+
+    const updatedShop = await this.prisma.shop.update({
       where: { userId },
       data: {
-        displayName: body.displayName,
-        address: body.address,
-        category: body.category,
+        ...rest,
+        slug,
+        logo: logoKey,
+        shopFront: shopFrontKey,
+        isVerified,
       },
     });
 
-    return shop;
+    return updatedShop;
   }
 
   async rewardUser(userId: number, task: RewardPointTask) {
