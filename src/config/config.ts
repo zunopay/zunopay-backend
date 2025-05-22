@@ -1,6 +1,6 @@
 import { Config } from './config.interface';
 
-export const CONFIG: Config = {
+export default (): Config => ({
   client: {
     webUrl: process.env.WEB_URL,
   },
@@ -39,6 +39,4 @@ export const CONFIG: Config = {
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     },
   },
-};
-
-export default (): Config => CONFIG;
+});

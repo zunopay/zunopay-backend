@@ -1,8 +1,8 @@
-import { CONFIG } from '../config/config';
+import config from '../config/config';
 import * as bcrypt from 'bcrypt';
 
 export async function hashPassword(password: string) {
-  const salt = CONFIG.security.bcryptSaltOrRound;
+  const salt = config().security.bcryptSaltOrRound;
 
   const hashedPassword = await bcrypt.hash(password, salt);
   return hashedPassword;

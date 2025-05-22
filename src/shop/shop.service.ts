@@ -18,7 +18,7 @@ import { kebabCase } from 'lodash';
  */
 
 function getS3Folder(userSlug: string, shopSlug: string) {
-  return `user/${userSlug}/shop/${shopSlug}`;
+  return `user/${userSlug}/shop/${shopSlug}/`;
 }
 
 @Injectable()
@@ -46,11 +46,19 @@ export class ShopService {
     const s3Folder = getS3Folder(user.s3BucketSlug, s3BucketSlug);
 
     if (logo) {
-      logoKey = await this.s3.uploadFile(logo, { s3Folder });
+      logoKey = await this.s3.uploadFile(logo, {
+        s3Folder,
+        fileName: 'logo',
+        timestamp: false,
+      });
     }
 
     if (shopFront) {
-      shopFrontKey = await this.s3.uploadFile(shopFront, { s3Folder });
+      shopFrontKey = await this.s3.uploadFile(shopFront, {
+        s3Folder,
+        fileName: 'shopFront',
+        timestamp: false,
+      });
     }
 
     const updatedUser = await this.prisma.user.update({

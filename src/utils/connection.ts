@@ -7,10 +7,10 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import axios from 'axios';
-import { CONFIG } from '../config/config';
 import { BASE_SPHERE_URL } from '../constants';
 import * as AES from 'crypto-js/aes';
 import * as Utf8 from 'crypto-js/enc-utf8';
+import config from '../config/config';
 
 export function clusterHeliusApiUrl(
   apiKey: string,
@@ -47,7 +47,7 @@ export function getSphereApiClient() {
   const client = axios.create({
     url: `${BASE_SPHERE_URL}`,
     headers: {
-      Authorization: `Bearer ${CONFIG.spherePayAuth.token}`,
+      Authorization: `Bearer ${config().spherePayAuth.token}`,
       'Content-Type': 'application/json',
     },
   });

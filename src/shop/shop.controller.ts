@@ -1,5 +1,17 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { RegisterShopDto } from './dto/register-shop.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  RegisterShopBodyDto,
+  RegisterShopDto,
+  RegisterShopFileDto,
+} from './dto/register-shop.dto';
 import { ShopService } from './shop.service';
 import { RolesGuard } from '../guards/roles.guard';
 import { Role } from '@prisma/client';
@@ -8,15 +20,25 @@ import { UpdateShopDto } from './dto/update-shop.dto';
 import { UserEntity } from '../decorators/user.decorator';
 import { UserPayload } from '../auth/dto/authorization.dto';
 import { UserAuth } from '../guards/user-auth';
+import { ApiConsumes } from '@nestjs/swagger';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { ApiFilesWithBody } from '../decorators/api-file-with-body.decorator';
 
 @Controller('shop')
 export class ShopController {
   constructor(private readonly shopService: ShopService) {}
 
   @UserAuth()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(AnyFilesInterceptor({}))
   @Post('/register')
   async register(
-    @Body() body: RegisterShopDto,
+    @ApiFilesWithBody({
+      fileFields: ['shopFront', 'logo'],
+      bodyType: RegisterShopBodyDto,
+      fileType: RegisterShopFileDto,
+    })
+    body: RegisterShopDto,
     @UserEntity() user: UserPayload,
   ) {
     const shop = await this.shopService.register(user.id, body);

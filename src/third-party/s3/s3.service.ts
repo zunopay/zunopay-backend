@@ -14,10 +14,11 @@ import { isEmpty } from 'lodash';
 import config from '../../config/config';
 import { appendTimestamp, Optional } from '../../utils/general';
 import { s3File, UploadFileOptions } from './dto/types';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 import * as path from 'path';
 
+@Injectable()
 export class S3Service {
   readonly region: string;
   readonly bucket: string;
@@ -27,7 +28,7 @@ export class S3Service {
   constructor() {
     this.region = config().s3.region;
     this.bucket = config().s3.bucket;
-    this.bucket = config().s3.cdn;
+    this.cdn = config().s3.cdn;
     const credentials = config().s3.credentials;
 
     this.client = new S3Client({ region: this.region, credentials });
@@ -132,7 +133,7 @@ export class S3Service {
     );
   }
 
-  uploadFile = async (file: s3File, options: UploadFileOptions) => {
+  async uploadFile(file: s3File, options: UploadFileOptions) {
     if (file) {
       const s3Folder = options.s3Folder;
       const fileName = options.fileName || uuid();
@@ -152,5 +153,5 @@ export class S3Service {
       const errorMessage = options.errorMessage || 'No file provided';
       throw new BadRequestException(errorMessage);
     }
-  };
+  }
 }
