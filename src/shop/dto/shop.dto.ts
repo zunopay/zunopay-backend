@@ -19,6 +19,9 @@ export class ShopDto {
   @IsString()
   address: string;
 
+  @IsString()
+  taxNumber: string;
+
   @IsEnum(ShopCategory)
   category: ShopCategory;
 
@@ -31,6 +34,7 @@ export function toShopDto(input: Shop) {
     id: input.id,
     displayName: input.displayName,
     logo: getPublicUrl(input.logo),
+    taxNumber: input.taxNumber,
     shopFront: getPublicUrl(input.shopFront),
     address: input.address,
     category: input.category,
