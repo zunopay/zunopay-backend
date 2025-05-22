@@ -1,4 +1,10 @@
-import { PartialType } from '@nestjs/swagger';
-import { RegisterShopDto } from './register-shop.dto';
+import { IntersectionType, PartialType } from '@nestjs/swagger';
+import { RegisterShopBodyDto, RegisterShopFileDto } from './register-shop.dto';
 
-export class UpdateShopDto extends PartialType(RegisterShopDto) {}
+export class UpdateShopBodyDto extends PartialType(RegisterShopBodyDto) {}
+export class UpdateShopFileDto extends PartialType(RegisterShopFileDto) {}
+
+export class UpdateShopDto extends IntersectionType(
+  UpdateShopBodyDto,
+  UpdateShopFileDto,
+) {}

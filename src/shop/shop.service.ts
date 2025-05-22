@@ -111,6 +111,14 @@ export class ShopService {
     return shops;
   }
 
+  async getShop(slug: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { slug },
+    });
+
+    return shop;
+  }
+
   async update(userId: number, body: UpdateShopDto) {
     const { logo, shopFront, ...rest } = body;
 
@@ -127,11 +135,19 @@ export class ShopService {
     const s3Folder = getS3Folder(shop.user.s3BucketSlug, shop.s3BucketSlug);
 
     if (logo) {
-      logoKey = await this.s3.uploadFile(logo, { s3Folder });
+      logoKey = await this.s3.uploadFile(logo, {
+        s3Folder,
+        fileName: 'logo',
+        timestamp: false,
+      });
     }
 
     if (shopFront) {
-      shopFrontKey = await this.s3.uploadFile(shopFront, { s3Folder });
+      shopFrontKey = await this.s3.uploadFile(shopFront, {
+        s3Folder,
+        fileName: 'shopFront',
+        timestamp: false,
+      });
     }
 
     if (rest.displayName) {
