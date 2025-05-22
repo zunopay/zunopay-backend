@@ -77,6 +77,13 @@ export class ShopController {
     return toShopDto(shop);
   }
 
+  @UserAuth()
+  @Get('/get-user')
+  async getUserShop(@UserEntity() user: UserPayload) {
+    const shop = await this.shopService.getUserShop(user.id);
+    return toShopDto(shop);
+  }
+
   @RolesGuard([Role.Admin])
   @Patch('/verify/:username')
   async verify(@Param('username') username: string) {

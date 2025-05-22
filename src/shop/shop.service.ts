@@ -119,6 +119,14 @@ export class ShopService {
     return shop;
   }
 
+  async getUserShop(userId: number) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { userId },
+    });
+
+    return shop;
+  }
+
   async update(userId: number, body: UpdateShopDto) {
     const { logo, shopFront, ...rest } = body;
 

@@ -1,6 +1,7 @@
 import { Shop, ShopCategory, ShopStatus } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { IsEnum, IsNumber, IsString } from 'class-validator';
+import { getPublicUrl } from '../../utils/s3';
 
 export class ShopDto {
   @IsNumber()
@@ -11,6 +12,9 @@ export class ShopDto {
 
   @IsString()
   logo: string;
+
+  @IsString()
+  shopFront: string;
 
   @IsString()
   address: string;
@@ -26,7 +30,8 @@ export function toShopDto(input: Shop) {
   const plainShopDto: ShopDto = {
     id: input.id,
     displayName: input.displayName,
-    logo: input.logo,
+    logo: getPublicUrl(input.logo),
+    shopFront: getPublicUrl(input.shopFront),
     address: input.address,
     category: input.category,
     status: input.status,
