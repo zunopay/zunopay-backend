@@ -86,6 +86,10 @@ jobs:
               --env "SOLANA_CLUSTER=${{ secrets.SOLANA_CLUSTER }}" \
               --env "TREASURY_PRIVATE_KEY=${{ secrets.TREASURY_PRIVATE_KEY }}" \
               --env "TREASURY_SECRET=${{ secrets.TREASURY_SECRET }}" \
+              --env "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+              --env "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              --env "AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}" \
+              --env "AWS_BUCKET_REGION=${{ secrets.AWS_BUCKET_REGION }}" \
               --name ${{ env.REPOSITORY }} -p 3005:3005 ghcr.io/${{ env.ORG_NAME }}/${{ env.REPOSITORY }}:latest
 
             echo "Cleaning up dangling Docker images that are 12 hours older"
