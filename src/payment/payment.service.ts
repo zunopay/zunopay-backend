@@ -43,6 +43,7 @@ import { Role, TokenType, TransferStatus } from '@prisma/client';
 import { IndexerService } from '../indexer/indexer.service';
 import { TransferHistoryInput, TransferType } from './dto/transfer-history';
 import { ReceiverInput } from './dto/receiver.dto';
+import { WithdrawParams } from './dto/withdraw-params.dto';
 
 /*
 TODO:
@@ -77,6 +78,52 @@ export class PaymentService {
     }
 
     return { ...receiver, walletAddress: receiver.wallet.address };
+  }
+
+  async createWithdrawTransaction(query: WithdrawParams, userId: number) {
+    try {
+      const { destinationAddress, amount } = query;
+
+      const sender = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { wallet: { select: { address: true } } },
+      });
+
+      // Construct transaction
+      const referenceKey = Keypair.generate().publicKey;
+      const senderWalletAddress = sender.wallet.address;
+      const transaction = await this.constructDigitalTransferTransaction(
+        senderWalletAddress,
+        destinationAddress,
+        amount,
+        referenceKey,
+      );
+
+      const reference = referenceKey.toString();
+      const transfer = await this.prisma.transfer.create({
+        data: {
+          senderWallet: { connect: { address: senderWalletAddress } },
+          receiverWallet: {
+            connectOrCreate: {
+              where: { address: destinationAddress },
+              create: {
+                address: destinationAddress,
+                lastInteractedAt: new Date(),
+              },
+            },
+          },
+          amount,
+          reference,
+          tokenType: TokenType.USDC,
+          status: TransferStatus.Pending,
+        },
+      });
+      this.indexerService.pollPayment(transfer);
+
+      return transaction;
+    } catch (e) {
+      throw new InternalServerErrorException('Failed to initiate withdraw');
+    }
   }
 
   async createTransferRequest(query: TransferParams, userId: number) {

@@ -8,6 +8,7 @@ import { UserEntity } from 'src/decorators/user.decorator';
 import { UserPayload } from 'src/auth/dto/authorization.dto';
 import { UserAuth } from 'src/guards/user-auth';
 import { toTransferHistoryArray } from './dto/transfer-history';
+import { WithdrawParams } from './dto/withdraw-params.dto';
 
 @ApiTags('Payment')
 @Controller('payment')
@@ -32,6 +33,17 @@ export class PaymentController {
       user.id,
     );
     return transferTransaction;
+  }
+
+  @UserAuth()
+  @Get('get/withdraw')
+  async withdraw(
+    @Query() query: WithdrawParams,
+    @UserEntity() user: UserPayload,
+  ) {
+    const withdrawTransaction =
+      await this.paymentService.createWithdrawTransaction(query, user.id);
+    return withdrawTransaction;
   }
 
   @UserAuth()
