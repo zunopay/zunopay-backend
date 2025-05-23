@@ -145,13 +145,14 @@ export class PaymentService {
       });
 
       const isMerchant = receiver.role == Role.Merchant;
-      let referrerWalletAddress: string;
+      let referrerWalletAddress: string, royaltyFee: number;
       if (isMerchant) {
         const referrer = await this.prisma.user.findUnique({
           where: { id: receiver.referredBy.referrerId },
           select: { wallet: { select: { address: true } } },
         });
         referrerWalletAddress = referrer.wallet.address;
+        royaltyFee = (REFERRAL_FEE_BASIS_POINTS * amount) / 10000;
       }
 
       // Construct transaction
@@ -182,6 +183,7 @@ export class PaymentService {
           reference,
           tokenType: TokenType.USDC,
           status: TransferStatus.Pending,
+          royaltyFee,
         },
       });
       this.indexerService.pollPayment(transfer);

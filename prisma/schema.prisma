@@ -119,6 +119,7 @@ model Transfer {
   createdAt             DateTime       @default(now())
   receiverWalletAddress String
   receiverWallet        Wallet         @relation(name: "ReceiverWallet", fields: [receiverWalletAddress], references: [address])
+  royaltyFee            Int?
 }
 
 enum RewardPointTask {
