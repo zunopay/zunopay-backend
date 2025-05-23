@@ -26,6 +26,7 @@ import {
   UpdateShopDto,
   UpdateShopFileDto,
 } from './dto/update-shop.dto';
+import { toUserShopDto } from './dto/user-shop.dto';
 
 @Controller('shop')
 export class ShopController {
@@ -45,13 +46,13 @@ export class ShopController {
     @UserEntity() user: UserPayload,
   ) {
     const shop = await this.shopService.register(user.id, body);
-    return toShopDto(shop);
+    return toUserShopDto(shop);
   }
 
   @RolesGuard([Role.Merchant])
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(AnyFilesInterceptor({}))
-  @Post('/update')
+  @Patch('/update')
   async update(
     @ApiFilesWithBody({
       fileFields: ['shopFront', 'logo'],
@@ -62,7 +63,7 @@ export class ShopController {
     @UserEntity() user: UserPayload,
   ) {
     const shop = await this.shopService.update(user.id, body);
-    return toShopDto(shop);
+    return toUserShopDto(shop);
   }
 
   @Get('/get')
@@ -81,13 +82,13 @@ export class ShopController {
   @Get('/get-user')
   async getUserShop(@UserEntity() user: UserPayload) {
     const shop = await this.shopService.getUserShop(user.id);
-    return toShopDto(shop);
+    return toUserShopDto(shop);
   }
 
   @RolesGuard([Role.Admin])
   @Patch('/verify/:username')
   async verify(@Param('username') username: string) {
     const shop = await this.shopService.verify(username);
-    return shop;
+    return toUserShopDto(shop);
   }
 }
