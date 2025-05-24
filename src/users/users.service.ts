@@ -4,7 +4,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RewardPointTask, Role, User } from '@prisma/client';
+import {
+  RewardPointTask,
+  Role,
+  TransferStatus,
+  User,
+  Shop,
+} from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
@@ -21,6 +27,7 @@ import { UserInput } from './dto/user.dto';
 import { WebhookService } from '../indexer/webhook/webhook.service';
 import { Currency } from '../types/payment';
 import { appendTimestamp } from 'src/utils/general';
+import { ShopInput } from 'src/shop/dto/shop.dto';
 
 @Injectable()
 export class UsersService {
@@ -85,6 +92,28 @@ export class UsersService {
 
   async findOneByUsername(username: string): Promise<User> {
     return this.prisma.user.findUnique({ where: { username } });
+  }
+
+  async findRoyaltyEarned(userId: number) {
+    const referredShops = await this.prisma.shop.findMany({
+      where: { user: { referredBy: { referrerId: userId } } },
+      include: { user: { select: { wallet: { select: { address: true } } } } },
+    });
+
+    const royalties: { fee: number; shop: ShopInput }[] = [];
+    for (const shop of referredShops) {
+      const data = await this.prisma.transfer.aggregate({
+        where: {
+          receiverWalletAddress: shop.user.wallet.address,
+          status: TransferStatus.Success,
+        },
+        _sum: { royaltyFee: true },
+      });
+
+      royalties.push({ fee: data._sum.royaltyFee, shop });
+    }
+
+    return royalties;
   }
 
   async registerMember(username: string) {

@@ -23,7 +23,9 @@ export class ShopDto {
   status: ShopStatus;
 }
 
-export function toShopDto(input: Shop) {
+export type ShopInput = Shop;
+
+export function toShopDto(input: ShopInput) {
   const plainShopDto: ShopDto = {
     id: input.id,
     displayName: input.displayName,

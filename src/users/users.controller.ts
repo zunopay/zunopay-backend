@@ -8,6 +8,10 @@ import { toUserDto } from './dto/user.dto';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { toWalletBalanceDto, WalletBalanceDto } from './dto/wallet-balance.dto';
+import {
+  RoyaltyEarnedDto,
+  toRoyaltyEarnedDtoArray,
+} from 'src/shop/dto/royalty-earned.dto';
 
 @Controller('user')
 @ApiTags('User')
@@ -44,5 +48,14 @@ export class UserController {
   @Get('/get/reward-points')
   async getRewardPoints(@UserEntity() user: UserPayload): Promise<number> {
     return await this.userService.getUserPoints(user.id);
+  }
+
+  @UserAuth()
+  @Get('/get/royalty-earned')
+  async getRoyaltyEarned(
+    @UserEntity() user: UserPayload,
+  ): Promise<RoyaltyEarnedDto[]> {
+    const data = await this.userService.findRoyaltyEarned(user.id);
+    return toRoyaltyEarnedDtoArray(data);
   }
 }
