@@ -2,6 +2,7 @@ import { IsNumber } from 'class-validator';
 import { ShopDto, ShopInput, toShopDto } from './shop.dto';
 import { plainToInstance, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { getUSDCAmount } from 'src/utils/payments';
 
 export class RoyaltyEarnedDto {
   @IsNumber()
@@ -18,7 +19,7 @@ export function toRoyaltyEarnedDto(input: RoyaltyEarnedInput) {
   const { fee, shop } = input;
 
   const plainRoyaltyEarnedDto: RoyaltyEarnedDto = {
-    fee: input.fee,
+    fee: getUSDCAmount(fee),
     shop: toShopDto(shop),
   };
 
