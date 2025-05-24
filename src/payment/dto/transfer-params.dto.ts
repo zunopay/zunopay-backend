@@ -3,7 +3,7 @@ import { TransformStringToNumber } from '../../decorators/transformStringToNumbe
 
 export class TransferParams {
   @IsString()
-  username: string;
+  id: string;
 
   @TransformStringToNumber()
   @IsNumber()

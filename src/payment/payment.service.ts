@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { getUSDCUiAmount } from '../utils/payments';
+import { getUSDCUiAmount, isSolanaAddress } from '../utils/payments';
 import { TransferParams } from './dto/transfer-params.dto';
 import {
   ComputeBudgetProgram,
@@ -128,53 +128,78 @@ export class PaymentService {
 
   async createTransferRequest(query: TransferParams, userId: number) {
     try {
-      const { username, amount } = query;
+      const { id, amount } = query;
 
       const sender = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { wallet: { select: { address: true } } },
       });
 
-      const receiver = await this.prisma.user.findUnique({
-        where: { username },
-        select: {
-          wallet: { select: { address: true } },
-          role: true,
-          referredBy: true,
-        },
-      });
+      const senderWalletAddress = sender.wallet.address;
 
-      const isMerchant = receiver.role == Role.Merchant;
-      let referrerWalletAddress: string, royaltyFee: number;
-      if (isMerchant) {
+      let receiverWalletAddress = id;
+      let isMerchant = false;
+      let referredById: number | undefined;
+
+      if (isSolanaAddress(id)) {
+        const wallet = await this.prisma.wallet.findUnique({
+          where: { address: id },
+          include: { user: { include: { referredBy: true } } },
+        });
+
+        if (wallet?.user) {
+          isMerchant = wallet.user.role === Role.Merchant;
+          referredById = wallet.user.referredBy?.referrerId;
+          receiverWalletAddress = wallet.address;
+        }
+      } else {
+        const user = await this.prisma.user.findUnique({
+          where: { username: id },
+          select: {
+            wallet: { select: { address: true } },
+            role: true,
+            referredBy: true,
+          },
+        });
+
+        if (!user) throw new NotFoundException('Receiver not found');
+
+        isMerchant = user.role === Role.Merchant;
+        referredById = user.referredBy?.referrerId;
+        receiverWalletAddress = user.wallet.address;
+      }
+
+      let referrerWalletAddress: string | undefined;
+      let royaltyFee = 0;
+
+      if (isMerchant && referredById) {
         const referrer = await this.prisma.user.findUnique({
-          where: { id: receiver.referredBy.referrerId },
+          where: { id: referredById },
           select: { wallet: { select: { address: true } } },
         });
-        referrerWalletAddress = referrer.wallet.address;
+        referrerWalletAddress = referrer?.wallet.address;
         royaltyFee = (REFERRAL_FEE_BASIS_POINTS * amount) / 10000;
       }
 
-      // Construct transaction
       const referenceKey = Keypair.generate().publicKey;
-      const senderWalletAddress = sender.wallet.address;
       const transaction = await this.constructDigitalTransferTransaction(
         senderWalletAddress,
-        receiver.wallet.address,
+        receiverWalletAddress,
         amount,
         referenceKey,
         referrerWalletAddress,
       );
 
       const reference = referenceKey.toString();
+
       const transfer = await this.prisma.transfer.create({
         data: {
           senderWallet: { connect: { address: senderWalletAddress } },
           receiverWallet: {
             connectOrCreate: {
-              where: { address: receiver.wallet.address },
+              where: { address: receiverWalletAddress },
               create: {
-                address: receiver.wallet.address,
+                address: receiverWalletAddress,
                 lastInteractedAt: new Date(),
               },
             },
@@ -186,8 +211,8 @@ export class PaymentService {
           royaltyFee,
         },
       });
-      this.indexerService.pollPayment(transfer);
 
+      this.indexerService.pollPayment(transfer);
       return transaction;
     } catch (e) {
       throw new InternalServerErrorException(
