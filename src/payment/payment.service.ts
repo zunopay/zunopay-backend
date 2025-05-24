@@ -65,19 +65,28 @@ export class PaymentService {
     this.connection = getConnection();
   }
 
-  async getReceiver(username: string): Promise<ReceiverInput> {
-    const receiver = await this.prisma.user.findUnique({
-      where: { username },
-      include: { wallet: true },
-    });
+  async getReceiver(id: string): Promise<ReceiverInput> {
+    if (isSolanaAddress(id)) {
+      const wallet = await this.prisma.wallet.findUnique({
+        where: { address: id },
+        include: { user: true },
+      });
 
-    if (!receiver) {
-      throw new NotFoundException(
-        `User with username ${username} doesn't exist`,
-      );
+      return wallet?.user
+        ? { id: wallet.user.username, avatar: wallet.user.avatar }
+        : { id };
     }
 
-    return { ...receiver, walletAddress: receiver.wallet.address };
+    const user = await this.prisma.user.findUnique({
+      where: { username: id },
+      select: { username: true, avatar: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with username ${id} doesn't exist`);
+    }
+
+    return { id: user.username, avatar: user.avatar };
   }
 
   async createWithdrawTransaction(query: WithdrawParams, userId: number) {
