@@ -386,8 +386,10 @@ export class PaymentService {
 
     if (isMerchant) {
       const referrer = new PublicKey(referrerWalletAddress);
-      const { instruction: createReferrerTokenAccountInstruction } =
-        await this.getTokenAccountOrCreateInstruction(referrer, mint);
+      const {
+        instruction: createReferrerTokenAccountInstruction,
+        address: referrerWalletTokenAddress,
+      } = await this.getTokenAccountOrCreateInstruction(referrer, mint);
 
       platformFee = (PLATFORM_FEE_BASIS_POINTS * amount) / 10000;
       const createTransferToPlatform = createTransferInstruction(
@@ -403,7 +405,7 @@ export class PaymentService {
         referralFee = (REFERRAL_FEE_BASIS_POINTS * amount) / 10000;
         const createTransferToReferrer = createTransferInstruction(
           source,
-          referrer,
+          referrerWalletTokenAddress,
           sourceOwner,
           referralFee,
         );
