@@ -287,13 +287,12 @@ export class UsersService {
   }
 
   async getUserPoints(userId: number) {
-    const rewards = await this.prisma.userRewardPoint.findMany({
+    const rewards = await this.prisma.userRewardPoint.aggregate({
       where: { userId },
+      _sum: { value: true },
     });
-    let totalPoints = 0;
 
-    rewards.forEach((data) => (totalPoints += data.value));
-    return totalPoints;
+    return rewards._sum.value;
   }
 
   async getRefCodes() {
