@@ -10,6 +10,7 @@ import { RewardPointTask, Role } from '@prisma/client';
 import { S3Service } from '../third-party/s3/s3.service';
 import { appendTimestamp } from '../utils/general';
 import { kebabCase } from 'lodash';
+import { SHOP_ONBOARDING_POINTS } from 'src/constants';
 
 /**
  *
@@ -99,7 +100,12 @@ export class ShopService {
       data: { isVerified: true },
     });
 
-    this.rewardUser(user.referredBy.referrerId, RewardPointTask.ShopOnboarding);
+    this.rewardUser(
+      user.referredBy.referrerId,
+      RewardPointTask.ShopOnboarding,
+      SHOP_ONBOARDING_POINTS,
+      shop.id,
+    );
     return shop;
   }
 
@@ -179,11 +185,18 @@ export class ShopService {
     return updatedShop;
   }
 
-  async rewardUser(userId: number, task: RewardPointTask) {
-    await this.prisma.userRewardPoints.create({
+  async rewardUser(
+    userId: number,
+    task: RewardPointTask,
+    points: number,
+    targetId: number,
+  ) {
+    await this.prisma.userRewardPoint.create({
       data: {
         user: { connect: { id: userId } },
-        reward: { connect: { task } },
+        task,
+        value: points,
+        targetId,
       },
     });
   }

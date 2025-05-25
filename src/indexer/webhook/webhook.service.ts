@@ -21,8 +21,12 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../../utils/connection';
 import bs58 from 'bs58';
-import { TokenType, TransferStatus } from '@prisma/client';
-import { USDC_ADDRESS } from 'src/constants';
+import { RewardPointTask, TokenType, TransferStatus } from '@prisma/client';
+import {
+  MAX_SHOPPING_POINTS,
+  USDC_ADDRESS,
+  USDC_DECIMALS,
+} from 'src/constants';
 
 @Injectable()
 export class WebhookService {
@@ -130,8 +134,9 @@ export class WebhookService {
     const data = bs58.decode(instruction.data);
     const transferData = transferInstructionData.decode(data);
     const receiver = account.owner.toString();
+    const amount = Number(transferData.amount);
 
-    await this.prisma.transfer.upsert({
+    const transfer = await this.prisma.transfer.upsert({
       where: { signature },
       create: {
         senderWallet: {
@@ -166,10 +171,32 @@ export class WebhookService {
         },
         status: TransferStatus.Success,
         signature,
-        amount: Number(transferData.amount),
+        amount,
         tokenType: TokenType.USDC, // TODO: Change this when support more currency,
       },
+      select: {
+        senderWallet: { select: { userId: true } },
+        receiverWallet: { select: { userId: true } },
+        royaltyFee: true,
+      },
     });
+
+    // If royaltyFee, receiver is merchant
+    if (transfer.royaltyFee) {
+      const points =
+        amount >= 50 * Math.pow(10, USDC_DECIMALS)
+          ? MAX_SHOPPING_POINTS
+          : (amount * MAX_SHOPPING_POINTS) / 50;
+
+      await this.prisma.userRewardPoint.create({
+        data: {
+          user: { connect: { id: transfer.senderWallet.userId } },
+          value: points,
+          task: RewardPointTask.Shopping,
+          targetId: transfer.receiverWallet.userId,
+        },
+      });
+    }
   }
 
   private generateJwtHeader() {

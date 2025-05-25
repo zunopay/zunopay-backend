@@ -38,7 +38,7 @@ model User {
   s3BucketSlug     String                @unique
   referrals        ReferralCode[]        @relation(name: "ReferrerCodes")
   referredBy       ReferralCode?         @relation("ReferredUser")
-  points           UserRewardPoints[]
+  points           UserRewardPoint[]
   shop             Shop?
 }
 
@@ -126,20 +126,14 @@ enum RewardPointTask {
   ShopOnboarding
   EarlyUser
   UserReferred
+  Shopping
 }
 
-model RewardPointSystem {
-  id     Int                @id @default(autoincrement())
-  task   RewardPointTask    @unique
-  points Int
-  users  UserRewardPoints[]
-}
-
-model UserRewardPoints {
-  id       Int               @id @default(autoincrement())
+model UserRewardPoint {
+  id       Int             @id @default(autoincrement())
   userId   Int
-  user     User              @relation(fields: [userId], references: [id])
-  rewardId Int
-  reward   RewardPointSystem @relation(fields: [rewardId], references: [id])
+  user     User            @relation(fields: [userId], references: [id])
+  task     RewardPointTask
+  value    Int
   targetId Int?
 }

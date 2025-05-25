@@ -4,17 +4,11 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import {
-  RewardPointTask,
-  Role,
-  TransferStatus,
-  User,
-  Shop,
-} from '@prisma/client';
+import { RewardPointTask, Role, TransferStatus, User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { RegisterDto } from './dto/register.dto';
 import { validateEmail } from '../utils/user';
-import { GoogleUserPayload, UserPayload } from '../auth/dto/authorization.dto';
+import { GoogleUserPayload } from '../auth/dto/authorization.dto';
 import { AuthService } from '../auth/auth.service';
 import { hashPassword } from '../utils/hash';
 import { LoginDto } from './dto/login.dto';
@@ -27,7 +21,8 @@ import { UserInput } from './dto/user.dto';
 import { WebhookService } from '../indexer/webhook/webhook.service';
 import { Currency } from '../types/payment';
 import { appendTimestamp } from 'src/utils/general';
-import { ShopInput } from 'src/shop/dto/shop.dto';
+import { ShopInput } from '../shop/dto/shop.dto';
+import { EARLY_USER_POINTS, USER_REFERRAL_POINTS } from '../constants';
 
 @Injectable()
 export class UsersService {
@@ -262,31 +257,42 @@ export class UsersService {
       include: { referredBy: true },
     });
 
-    this.rewardUser(updatedUser.id, RewardPointTask.EarlyUser);
+    this.rewardUser(
+      updatedUser.id,
+      RewardPointTask.EarlyUser,
+      EARLY_USER_POINTS,
+    );
     this.rewardUser(
       updatedUser.referredBy.referrerId,
       RewardPointTask.UserReferred,
+      USER_REFERRAL_POINTS,
     );
     this.webhookService.subscribeTo(walletAddress);
   }
 
-  async rewardUser(userId: number, task: RewardPointTask) {
-    await this.prisma.userRewardPoints.create({
+  async rewardUser(
+    userId: number,
+    task: RewardPointTask,
+    value: number,
+    targetId?: number,
+  ) {
+    await this.prisma.userRewardPoint.create({
       data: {
         user: { connect: { id: userId } },
-        reward: { connect: { task } },
+        task,
+        value,
+        targetId,
       },
     });
   }
 
   async getUserPoints(userId: number) {
-    const rewards = await this.prisma.userRewardPoints.findMany({
+    const rewards = await this.prisma.userRewardPoint.findMany({
       where: { userId },
-      select: { reward: { select: { points: true } } },
     });
     let totalPoints = 0;
 
-    rewards.forEach((data) => (totalPoints += data.reward.points));
+    rewards.forEach((data) => (totalPoints += data.value));
     return totalPoints;
   }
 
