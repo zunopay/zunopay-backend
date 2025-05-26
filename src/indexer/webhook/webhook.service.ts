@@ -20,12 +20,11 @@ import { PrismaService } from 'nestjs-prisma';
 import { getConnection } from '../../utils/connection';
 import bs58 from 'bs58';
 import { RewardPointTask, TokenType, TransferStatus } from '@prisma/client';
+import { USDC_ADDRESS } from '../../constants';
 import {
-  MAX_SHOPPING_POINTS,
-  USDC_ADDRESS,
-  USDC_DECIMALS,
-} from '../../constants';
-import { isSupportedToken } from '../../utils/payments';
+  calculateShoppingPoints,
+  isSupportedToken,
+} from '../../utils/payments';
 
 @Injectable()
 export class WebhookService {
@@ -175,11 +174,7 @@ export class WebhookService {
 
       // If royaltyFee, receiver is merchant
       if (transfer.royaltyFee) {
-        const points =
-          amount >= 50 * Math.pow(10, USDC_DECIMALS)
-            ? MAX_SHOPPING_POINTS
-            : (amount * MAX_SHOPPING_POINTS) / 50;
-
+        const points = calculateShoppingPoints(amount);
         await this.prisma.userRewardPoint.create({
           data: {
             user: { connect: { id: transfer.senderWallet.userId } },

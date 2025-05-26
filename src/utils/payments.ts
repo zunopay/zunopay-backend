@@ -1,7 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
-import { SUPPORTED_TOKENS, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
+import {
+  MAX_SHOPPING_POINTS,
+  SUPPORTED_TOKENS,
+  USDC_ADDRESS,
+  USDC_DECIMALS,
+} from '../constants';
 import { Currency } from '../types/payment';
 
 export function getCurrencyValue(key: string): Currency {
@@ -39,4 +44,14 @@ export function isSolanaAddress(value: unknown): boolean {
 
 export function isSupportedToken(mint: string) {
   return SUPPORTED_TOKENS.some((token) => token == mint);
+}
+
+export function calculateShoppingPoints(amount: number) {
+  const BASE_USDC = Math.pow(10, USDC_DECIMALS);
+  const points =
+    amount >= 50 * BASE_USDC
+      ? MAX_SHOPPING_POINTS
+      : Math.floor((amount * MAX_SHOPPING_POINTS) / (50 * BASE_USDC));
+
+  return points ?? 1;
 }
