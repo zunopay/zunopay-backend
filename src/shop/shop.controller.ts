@@ -49,6 +49,23 @@ export class ShopController {
     return toUserShopDto(shop);
   }
 
+  @RolesGuard([Role.Member])
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(AnyFilesInterceptor({}))
+  @Post('/onboard/:username')
+  async onboard(
+    @Param('username') username: string,
+    @ApiFilesWithBody({
+      fileFields: ['shopFront', 'logo'],
+      bodyType: RegisterShopBodyDto,
+      fileType: RegisterShopFileDto,
+    })
+    body: RegisterShopDto,
+  ) {
+    const shop = await this.shopService.onboard(username, body);
+    return toUserShopDto(shop);
+  }
+
   @RolesGuard([Role.Merchant])
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(AnyFilesInterceptor({}))
