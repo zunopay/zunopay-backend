@@ -13,8 +13,6 @@ import * as jwt from 'jsonwebtoken';
 import {
   getAccount,
   TOKEN_PROGRAM_ID,
-  transfer,
-  transferChecked,
   transferInstructionData,
 } from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -26,7 +24,8 @@ import {
   MAX_SHOPPING_POINTS,
   USDC_ADDRESS,
   USDC_DECIMALS,
-} from 'src/constants';
+} from '../../constants';
+import { isSupportedToken } from '../../utils/payments';
 
 @Injectable()
 export class WebhookService {
@@ -119,6 +118,7 @@ export class WebhookService {
     let sender: string, destinationAta: string;
 
     if (instruction.accounts.at(1) == USDC_ADDRESS) {
+      // transfer checked
       sender = instruction.accounts.at(3);
       destinationAta = instruction.accounts.at(2);
     } else {
@@ -131,69 +131,102 @@ export class WebhookService {
       new PublicKey(destinationAta),
     );
 
+    // Index only supported tokens
+    if (!isSupportedToken(account.mint.toString())) {
+      return;
+    }
+
     const data = bs58.decode(instruction.data);
     const transferData = transferInstructionData.decode(data);
     const receiver = account.owner.toString();
     const amount = Number(transferData.amount);
 
-    const transfer = await this.prisma.transfer.upsert({
-      where: { signature },
-      create: {
-        senderWallet: {
-          connectOrCreate: {
-            where: { address: sender },
-            create: { address: sender, lastInteractedAt: new Date() },
-          },
-        },
-        receiverWallet: {
-          connectOrCreate: {
-            where: { address: receiver },
-            create: { address: receiver, lastInteractedAt: new Date() },
-          },
-        },
-        status: TransferStatus.Success,
-        signature,
-        amount: Number(transferData.amount),
-        tokenType: TokenType.USDC, // TODO: Change this when support more currency,
-      },
-      update: {
-        senderWallet: {
-          connectOrCreate: {
-            where: { address: sender },
-            create: { address: sender, lastInteractedAt: new Date() },
-          },
-        },
-        receiverWallet: {
-          connectOrCreate: {
-            where: { address: receiver },
-            create: { address: receiver, lastInteractedAt: new Date() },
-          },
-        },
-        status: TransferStatus.Success,
-        signature,
-        amount,
-        tokenType: TokenType.USDC, // TODO: Change this when support more currency,
-      },
-      select: {
-        senderWallet: { select: { userId: true } },
-        receiverWallet: { select: { userId: true } },
-        royaltyFee: true,
-      },
+    const reference = instruction.accounts.at(-1);
+    const inAppTransfer = await this.prisma.transfer.findUnique({
+      where: { reference },
     });
 
-    // If royaltyFee, receiver is merchant
-    if (transfer.royaltyFee) {
-      const points =
-        amount >= 50 * Math.pow(10, USDC_DECIMALS)
-          ? MAX_SHOPPING_POINTS
-          : (amount * MAX_SHOPPING_POINTS) / 50;
-
-      await this.prisma.userRewardPoint.create({
+    if (inAppTransfer) {
+      const transfer = await this.prisma.transfer.update({
+        where: { reference },
         data: {
-          user: { connect: { id: transfer.senderWallet.userId } },
-          value: points,
-          task: RewardPointTask.Shopping,
-          targetId: transfer.receiverWallet.userId,
+          senderWallet: {
+            connectOrCreate: {
+              where: { address: sender },
+              create: { address: sender, lastInteractedAt: new Date() },
+            },
+          },
+          receiverWallet: {
+            connectOrCreate: {
+              where: { address: receiver },
+              create: { address: receiver, lastInteractedAt: new Date() },
+            },
+          },
+          status: TransferStatus.Success,
+          signature,
+          tokenType: TokenType.USDC, // TODO: Change this when support more currency,
+        },
+        select: {
+          senderWallet: { select: { userId: true } },
+          receiverWallet: { select: { userId: true } },
+          royaltyFee: true,
+        },
+      });
+
+      // If royaltyFee, receiver is merchant
+      if (transfer.royaltyFee) {
+        const points =
+          amount >= 50 * Math.pow(10, USDC_DECIMALS)
+            ? MAX_SHOPPING_POINTS
+            : (amount * MAX_SHOPPING_POINTS) / 50;
+
+        await this.prisma.userRewardPoint.create({
+          data: {
+            user: { connect: { id: transfer.senderWallet.userId } },
+            value: points,
+            task: RewardPointTask.Shopping,
+            targetId: transfer.receiverWallet.userId,
+          },
+        });
+      }
+    } else {
+      // create transfer
+      await this.prisma.transfer.upsert({
+        where: { signature },
+        create: {
+          senderWallet: {
+            connectOrCreate: {
+              where: { address: sender },
+              create: { address: sender, lastInteractedAt: new Date() },
+            },
+          },
+          receiverWallet: {
+            connectOrCreate: {
+              where: { address: receiver },
+              create: { address: receiver, lastInteractedAt: new Date() },
+            },
+          },
+          status: TransferStatus.Success,
+          signature,
+          amount: Number(transferData.amount),
+          tokenType: TokenType.USDC, // TODO: Change this when support more currency,
+        },
+        update: {
+          senderWallet: {
+            connectOrCreate: {
+              where: { address: sender },
+              create: { address: sender, lastInteractedAt: new Date() },
+            },
+          },
+          receiverWallet: {
+            connectOrCreate: {
+              where: { address: receiver },
+              create: { address: receiver, lastInteractedAt: new Date() },
+            },
+          },
+          status: TransferStatus.Success,
+          signature,
+          tokenType: TokenType.USDC, // TODO: Change this when support more currency,
         },
       });
     }

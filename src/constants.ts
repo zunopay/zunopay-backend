@@ -33,3 +33,6 @@ export const EARLY_USER_POINTS = 3;
 export const USER_REFERRAL_POINTS = 5;
 export const SHOP_ONBOARDING_POINTS = 20;
 export const MAX_SHOPPING_POINTS = 10;
+
+// Supported Tokens
+export const SUPPORTED_TOKENS = [USDC_ADDRESS];

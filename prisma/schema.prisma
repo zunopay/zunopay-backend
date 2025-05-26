@@ -113,7 +113,7 @@ model Transfer {
   senderWallet          Wallet?        @relation(name: "SenderWallet", fields: [senderWalletAddress], references: [address])
   amount                Int
   tokenType             TokenType
-  reference             String?
+  reference             String?         @unique
   status                TransferStatus
   signature             String?        @unique
   createdAt             DateTime       @default(now())

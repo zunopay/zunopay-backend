@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
-import { USDC_ADDRESS, USDC_DECIMALS } from '../constants';
+import { SUPPORTED_TOKENS, USDC_ADDRESS, USDC_DECIMALS } from '../constants';
 import { Currency } from '../types/payment';
 
 export function getCurrencyValue(key: string): Currency {
@@ -35,4 +35,8 @@ export function isSolanaAddress(value: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+export function isSupportedToken(mint: string) {
+  return SUPPORTED_TOKENS.some((token) => token == mint);
 }
