@@ -257,17 +257,19 @@ export class UsersService {
       include: { referredBy: true },
     });
 
-    this.rewardUser(
-      updatedUser.id,
-      RewardPointTask.EarlyUser,
-      EARLY_USER_POINTS,
-    );
-    this.rewardUser(
-      updatedUser.referredBy.referrerId,
-      RewardPointTask.UserReferred,
-      USER_REFERRAL_POINTS,
-    );
-    this.webhookService.subscribeTo(walletAddress);
+    if (!wallet) {
+      this.rewardUser(
+        updatedUser.id,
+        RewardPointTask.EarlyUser,
+        EARLY_USER_POINTS,
+      );
+      this.rewardUser(
+        updatedUser.referredBy.referrerId,
+        RewardPointTask.UserReferred,
+        USER_REFERRAL_POINTS,
+      );
+      this.webhookService.subscribeTo(walletAddress);
+    }
   }
 
   async rewardUser(

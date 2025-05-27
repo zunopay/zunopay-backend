@@ -15,7 +15,7 @@ export class PrivyService {
 
   async authenticateUser(email: string) {
     const user = await this.client.getUserByEmail(email);
-    return { isAuthenticated: !!user, wallet: user.wallet?.address };
+    return { isAuthenticated: !!user, wallet: user?.wallet?.address };
   }
 
   async generateWallet(email: string) {
